@@ -3,7 +3,7 @@ import { DATABASE_URL } from "./Env.js";
 import { ErrorMsg } from "../../Utilities/Logger.js";
 
 export class Database {
-  pool: Pool | null = null;
+  private pool: Pool;
 
   constructor() {
     this.pool = new Pool({
@@ -12,23 +12,21 @@ export class Database {
   }
 
   async query(query: string, args?: any[]) {
-    if (this.pool) {
-      const client = await this.pool!.connect();
+    const client = await this.pool.connect();
 
-      try {
-        await client.query("BEGIN");
+    try {
+      await client.query("BEGIN");
 
-        const result: QueryResult<any> = await client.query(query, args);
-        await client.query("COMMIT");
+      const result: QueryResult<any> = await client.query(query, args);
+      await client.query("COMMIT");
 
-        return result;
-      } catch (error) {
-        ErrorMsg(error as Error);
-        await client.query("ROLLBACK");
-        throw error;
-      } finally {
-        client.release();
-      }
+      return result;
+    } catch (error) {
+      ErrorMsg(error as Error);
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
     }
   }
 }
