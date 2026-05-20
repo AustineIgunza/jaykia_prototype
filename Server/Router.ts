@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { routes } from "./Routes.js";
+import { Database } from "./Src/Config/DB.js";
 
 const Router = (
   request: IncomingMessage,
@@ -27,9 +28,11 @@ const Router = (
     return;
   }
 
+  const db = new Database();
+
   routes.forEach((route) => {
     if (route.name.toLowerCase() == pathnames.at(1)) {
-      route.controller(request, response);
+      route.controller(db, request, response);
       return;
     }
   });

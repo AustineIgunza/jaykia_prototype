@@ -1,11 +1,12 @@
 CREATE TABLE users(
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     username TEXT NOT NULL,
-    email TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
     password TEXT,
-    oauth TEXT,
+    oauth BOOLEAN DEFAULT FALSE,
     oauth_provider TEXT,
     created_at TIMESTAMP DEFAULT NOW(),
+    deleted_at TIMESTAMP
 
     CONSTRAINT valid_email 
         CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
