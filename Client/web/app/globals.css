@@ -1,26 +1,123 @@
 @import "tailwindcss";
 
+/* ─── JayKia Design Tokens ─── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Core palette */
+  --jk-charcoal: #0E0F11;
+  --jk-surface: #16181B;
+  --jk-surface-hover: #1E2024;
+  --jk-gold: #C8A24B;
+  --jk-gold-light: #D4B76A;
+  --jk-gold-dark: #A8862E;
+  --jk-offwhite: #F4F1EA;
+  --jk-grey: #8A8F98;
+  --jk-grey-light: #B0B4BC;
+  --jk-border: #2A2D32;
+  --jk-error: #E54D4D;
+  --jk-success: #4DA66A;
+
+  /* Semantic aliases */
+  --background: var(--jk-charcoal);
+  --foreground: var(--jk-offwhite);
+  --surface: var(--jk-surface);
+  --surface-hover: var(--jk-surface-hover);
+  --accent: var(--jk-gold);
+  --accent-light: var(--jk-gold-light);
+  --accent-dark: var(--jk-gold-dark);
+  --muted: var(--jk-grey);
+  --muted-light: var(--jk-grey-light);
+  --border: var(--jk-border);
+  --error: var(--jk-error);
+  --success: var(--jk-success);
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  --color-accent-dark: var(--accent-dark);
+  --color-muted: var(--muted);
+  --color-muted-light: var(--muted-light);
+  --color-border: var(--border);
+  --color-error: var(--error);
+  --color-success: var(--success);
+  --font-display: var(--font-playfair);
+  --font-sans: var(--font-inter);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ─── Base styles ─── */
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+/* ─── Gold divider utility ─── */
+
+.gold-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--jk-gold) 20%,
+    var(--jk-gold) 80%,
+    transparent 100%
+  );
+  opacity: 0.4;
+}
+
+/* ─── Smooth entry animations ─── */
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out both;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s ease-out both;
+}
+
+/* ─── Focus styles (AA accessible) ─── */
+
+:focus-visible {
+  outline: 2px solid var(--jk-gold);
+  outline-offset: 2px;
+}
+
+/* ─── Scrollbar styling ─── */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--jk-charcoal);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--jk-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--jk-grey);
 }
