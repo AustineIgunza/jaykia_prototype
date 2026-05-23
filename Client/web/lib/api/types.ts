@@ -167,6 +167,18 @@ export interface UpdateBookingDTO {
   cancelled?: boolean;
   cancelled_at?: string;
   reason?: string;
+  pickup_location?: string;
+  drop_off_location?: string;
+  no_of_passengers?: number;
+  no_of_luggage_items?: number;
+  mode_of_transport?: TransportMode;
+  flight_number?: string;
+  flight_arrival?: string;
+  contact_name?: string;
+  contact_phone?: string;
+  contact_email?: string;
+  child_seat?: boolean;
+  notes?: string;
 }
 
 // ─── Payments ───

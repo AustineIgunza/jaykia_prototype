@@ -68,17 +68,26 @@ export const mockUsers: PublicUserDTO[] = [
 ];
 
 export const mockRoles: Role[] = [
-  { id: 1, name: "admin", description: "Full system access" },
-  { id: 2, name: "customer", description: "Regular customer" },
-  { id: 3, name: "driver", description: "Assigned driver" },
+  { id: 1, name: "admin", description: "Full system access — CEO and management" },
+  { id: 2, name: "customer", description: "Regular customer booking transfers" },
+  { id: 3, name: "driver", description: "Assigned driver for airport transfers" },
+  { id: 4, name: "dispatcher", description: "Assigns drivers to bookings and manages schedules" },
+  { id: 5, name: "finance", description: "Manages payments, refunds, and financial reports" },
+  { id: 6, name: "support", description: "Handles customer enquiries and feedback" },
+  { id: 7, name: "partner", description: "Hotel/Airbnb partner with referral access" },
 ];
 
 export const mockPermissions: Permission[] = [
-  { id: 1, name: "manage_bookings", description: "Create, view, update bookings", created_at: "2025-10-01T00:00:00Z" },
-  { id: 2, name: "manage_users", description: "View and manage user accounts", created_at: "2025-10-01T00:00:00Z" },
-  { id: 3, name: "manage_payments", description: "View and reconcile payments", created_at: "2025-10-01T00:00:00Z" },
-  { id: 4, name: "view_analytics", description: "View dashboard analytics", created_at: "2025-10-01T00:00:00Z" },
-  { id: 5, name: "manage_refunds", description: "Approve or reject refunds", created_at: "2025-10-01T00:00:00Z" },
+  { id: 1, name: "manage_bookings", description: "Create, view, update and cancel bookings", created_at: "2025-10-01T00:00:00Z" },
+  { id: 2, name: "manage_users", description: "View, flag, and manage user accounts", created_at: "2025-10-01T00:00:00Z" },
+  { id: 3, name: "manage_payments", description: "View payments, send payment prompts to clients", created_at: "2025-10-01T00:00:00Z" },
+  { id: 4, name: "view_analytics", description: "View dashboard analytics and reports", created_at: "2025-10-01T00:00:00Z" },
+  { id: 5, name: "manage_refunds", description: "Approve or reject refund requests", created_at: "2025-10-01T00:00:00Z" },
+  { id: 6, name: "assign_drivers", description: "Assign drivers to pending bookings", created_at: "2025-10-01T00:00:00Z" },
+  { id: 7, name: "manage_drivers", description: "Add, remove, and manage driver profiles", created_at: "2025-10-01T00:00:00Z" },
+  { id: 8, name: "manage_partners", description: "Manage hotel and Airbnb partnerships", created_at: "2025-10-01T00:00:00Z" },
+  { id: 9, name: "send_notifications", description: "Send email/WhatsApp notifications to clients", created_at: "2025-10-01T00:00:00Z" },
+  { id: 10, name: "manage_feedback", description: "View and respond to customer feedback", created_at: "2025-10-01T00:00:00Z" },
 ];
 
 export const mockBookings: Booking[] = [

@@ -11,7 +11,7 @@ import { Modal } from "@/components/ui/modal";
 import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 import { useAuth } from "@/lib/auth/context";
 import { useApi } from "@/lib/api/use-api";
-import type { Booking } from "@/lib/api/types";
+import type { Booking, UpdateBookingDTO } from "@/lib/api/types";
 import type { BadgeVariant } from "@/components/ui/status-badge";
 
 const statusVariant: Record<string, BadgeVariant> = {
@@ -38,6 +38,19 @@ export default function AccountPage() {
   const [refundBooking, setRefundBooking] = useState<Booking | null>(null);
   const [refundReason, setRefundReason] = useState("");
   const [refundLoading, setRefundLoading] = useState(false);
+
+  // Edit booking modal
+  const [editBooking, setEditBooking] = useState<Booking | null>(null);
+  const [editForm, setEditForm] = useState({
+    pickup_location: "",
+    drop_off_location: "",
+    no_of_passengers: "",
+    no_of_luggage_items: "",
+    flight_number: "",
+    flight_arrival: "",
+    notes: "",
+  });
+  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -68,6 +81,44 @@ export default function AccountPage() {
       alert(err instanceof Error ? err.message : "Failed to submit rating");
     } finally {
       setRatingLoading(false);
+    }
+  }
+
+  function openEditModal(booking: Booking) {
+    setEditBooking(booking);
+    setEditForm({
+      pickup_location: booking.pickup_location,
+      drop_off_location: booking.drop_off_location,
+      no_of_passengers: String(booking.no_of_passengers),
+      no_of_luggage_items: String(booking.no_of_luggage_items),
+      flight_number: booking.flight_number || "",
+      flight_arrival: booking.flight_arrival || "",
+      notes: booking.notes || "",
+    });
+  }
+
+  async function submitEdit() {
+    if (!api || !editBooking) return;
+    setEditLoading(true);
+    try {
+      const dto: UpdateBookingDTO = {
+        pickup_location: editForm.pickup_location,
+        drop_off_location: editForm.drop_off_location,
+        no_of_passengers: Number(editForm.no_of_passengers),
+        no_of_luggage_items: Number(editForm.no_of_luggage_items),
+        flight_number: editForm.flight_number || undefined,
+        flight_arrival: editForm.flight_arrival || undefined,
+        notes: editForm.notes || undefined,
+      };
+      const updated = await api.updateBooking(editBooking.id, dto);
+      setBookings((prev) =>
+        prev.map((b) => (b.id === editBooking.id ? updated : b))
+      );
+      setEditBooking(null);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update booking");
+    } finally {
+      setEditLoading(false);
     }
   }
 
@@ -168,6 +219,15 @@ export default function AccountPage() {
                   )}
                   {!booking.cancelled && booking.trip_status === "pending" && (
                     <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEditModal(booking)}
+                    >
+                      Edit Booking
+                    </Button>
+                  )}
+                  {!booking.cancelled && booking.trip_status === "pending" && (
+                    <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setRefundBooking(booking)}
@@ -224,6 +284,68 @@ export default function AccountPage() {
             </Button>
             <Button loading={ratingLoading} onClick={submitRating}>
               Submit Rating
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Booking Modal */}
+      <Modal
+        open={!!editBooking}
+        onClose={() => setEditBooking(null)}
+        title="Edit Booking"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Pickup Location"
+            value={editForm.pickup_location}
+            onChange={(e) => setEditForm((f) => ({ ...f, pickup_location: e.target.value }))}
+            required
+          />
+          <Input
+            label="Drop-off Location"
+            value={editForm.drop_off_location}
+            onChange={(e) => setEditForm((f) => ({ ...f, drop_off_location: e.target.value }))}
+            required
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Passengers"
+              type="number"
+              min="1"
+              value={editForm.no_of_passengers}
+              onChange={(e) => setEditForm((f) => ({ ...f, no_of_passengers: e.target.value }))}
+            />
+            <Input
+              label="Luggage Items"
+              type="number"
+              min="0"
+              value={editForm.no_of_luggage_items}
+              onChange={(e) => setEditForm((f) => ({ ...f, no_of_luggage_items: e.target.value }))}
+            />
+          </div>
+          <Input
+            label="Flight Number"
+            value={editForm.flight_number}
+            onChange={(e) => setEditForm((f) => ({ ...f, flight_number: e.target.value }))}
+          />
+          <Input
+            label="Flight Arrival"
+            type="datetime-local"
+            value={editForm.flight_arrival}
+            onChange={(e) => setEditForm((f) => ({ ...f, flight_arrival: e.target.value }))}
+          />
+          <Textarea
+            label="Notes"
+            value={editForm.notes}
+            onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
+          />
+          <div className="flex gap-3 justify-end">
+            <Button variant="secondary" onClick={() => setEditBooking(null)}>
+              Cancel
+            </Button>
+            <Button loading={editLoading} onClick={submitEdit}>
+              Save Changes
             </Button>
           </div>
         </div>

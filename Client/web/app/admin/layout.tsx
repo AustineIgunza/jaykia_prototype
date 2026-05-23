@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 const sidebarLinks = [
   { href: "/admin", label: "Overview", icon: "\u{1F4CA}" },
   { href: "/admin/bookings", label: "Bookings", icon: "\u{1F4CB}" },
+  { href: "/admin/drivers", label: "Drivers", icon: "\u{1F698}" },
   { href: "/admin/payments", label: "Payments", icon: "\u{1F4B3}" },
   { href: "/admin/refunds", label: "Refunds", icon: "\u21A9" },
   { href: "/admin/ratings", label: "Ratings", icon: "\u2B50" },
