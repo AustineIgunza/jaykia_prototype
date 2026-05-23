@@ -1,8 +1,10 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { routes } from "./Routes.js";
 import { Database } from "./Src/Config/DB.js";
+import { ErrorMsg } from "./Utilities/Logger.js";
 
 const Router = (
+  db: Database,
   request: IncomingMessage,
   response: ServerResponse<IncomingMessage>,
 ) => {
@@ -28,22 +30,34 @@ const Router = (
     return;
   }
 
-  const db = new Database();
+  request.on("error", (error) => {
+    ErrorMsg(error);
 
-  routes.forEach((route) => {
-    if (route.name.toLowerCase() == pathnames.at(1)) {
-      route.controller(db, request, response);
-      return;
+    if (!response.headersSent) {
+      response.writeHead(500);
+      response.end(
+        JSON.stringify({
+          error: error.message,
+        }),
+      );
     }
   });
 
-  response.writeHead(404);
-  response.end(
-    JSON.stringify({
-      error: "Invalid api route",
-    }),
+  const matchedRoute = routes.find(
+    (route) => route.name.toLowerCase() == pathnames.at(1),
   );
-  return;
+
+  if (!matchedRoute) {
+    response.writeHead(404);
+    response.end(
+      JSON.stringify({
+        error: "Invalid api route",
+      }),
+    );
+    return;
+  }
+
+  matchedRoute.controller(db, request, response);
 };
 
 export default Router;

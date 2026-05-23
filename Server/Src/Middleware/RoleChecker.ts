@@ -20,7 +20,7 @@ export const RoleChecker = async (
       let responseStatusCode: number = 0,
         responseMessage: string = "";
 
-      if (userInfo.error == "invalid") {
+      if (userInfo.errorMsg == "invalid") {
         responseStatusCode = 403;
         responseMessage = "Auth token malformed";
       } else {

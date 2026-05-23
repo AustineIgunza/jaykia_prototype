@@ -5,8 +5,9 @@ import type { PublicUserDTO } from "../Modules/Users/user.types.js";
 
 export type AuthInfo = {
   success: boolean;
-  error: string;
+  errorMsg: string;
   userId: string;
+  statusCode: number;
 };
 
 export const AuthValidator = (request: IncomingMessage): AuthInfo => {
@@ -15,21 +16,28 @@ export const AuthValidator = (request: IncomingMessage): AuthInfo => {
   if (!authorization)
     return {
       success: false,
-      error: "not provided",
+      errorMsg: "Auth token not provided",
       userId: "",
+      statusCode: 401,
     };
 
   try {
     const userAuthToken = authorization.split(" ")[1];
     if (!userAuthToken)
-      return { success: false, error: "not provided", userId: "" };
+      return {
+        success: false,
+        errorMsg: "not provided",
+        userId: "",
+        statusCode: 401,
+      };
 
     const userDetails = decode_access_token(userAuthToken);
 
     return {
       success: true,
-      error: "invalid",
+      errorMsg: "",
       userId: (userDetails as PublicUserDTO).id,
+      statusCode: 200,
     };
   } catch (error) {
     Warning("Error at authenticating user");
