@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { GoldDivider } from "@/components/ui/gold-divider";
 import { Modal } from "@/components/ui/modal";
+import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 import { useAuth } from "@/lib/auth/context";
 import { useApi } from "@/lib/api/use-api";
 import type { Booking } from "@/lib/api/types";
@@ -97,19 +98,21 @@ export default function AccountPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-16">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="font-display text-3xl font-bold">My Account</h1>
-          <p className="text-sm text-muted mt-1">Manage your bookings and account</p>
+      <FadeIn>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="font-display text-3xl font-bold">My Account</h1>
+            <p className="text-sm text-muted mt-1">Manage your bookings and account</p>
+          </div>
+          <Button variant="ghost" onClick={logout}>
+            Sign Out
+          </Button>
         </div>
-        <Button variant="ghost" onClick={logout}>
-          Sign Out
-        </Button>
-      </div>
 
-      <GoldDivider />
+        <GoldDivider />
 
-      <h2 className="font-display text-xl font-semibold mb-6">Booking History</h2>
+        <h2 className="font-display text-xl font-semibold mb-6">Booking History</h2>
+      </FadeIn>
 
       {loading ? (
         <p className="text-muted animate-pulse">Loading bookings&hellip;</p>
@@ -121,8 +124,9 @@ export default function AccountPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <Stagger className="space-y-4" staggerDelay={0.08}>
           {bookings.map((booking) => (
+            <StaggerItem key={booking.id}>
             <Card key={booking.id}>
               <CardContent>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
@@ -174,8 +178,9 @@ export default function AccountPage() {
                 </div>
               </CardContent>
             </Card>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       )}
 
       {/* Rating Modal */}

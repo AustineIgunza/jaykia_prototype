@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth/context";
 
 const navLinks = [
   { href: "/services", label: "Services" },
@@ -13,6 +15,14 @@ const navLinks = [
 
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { user, loading, logout, isAdmin } = useAuth();
+  const router = useRouter();
+
+  function handleLogout() {
+    logout();
+    setMenuOpen(false);
+    router.push("/");
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-md">
@@ -40,11 +50,33 @@ function Header() {
 
         {/* Desktop actions */}
         <div className="hidden md:flex items-center gap-3">
-          <Link href="/auth/login">
-            <Button variant="ghost" size="sm">
-              Sign In
-            </Button>
-          </Link>
+          {loading ? (
+            <div className="w-20 h-8" />
+          ) : user ? (
+            <>
+              {isAdmin && (
+                <Link href="/admin">
+                  <Button variant="ghost" size="sm">
+                    Admin
+                  </Button>
+                </Link>
+              )}
+              <Link href="/auth/account">
+                <Button variant="ghost" size="sm">
+                  My Account
+                </Button>
+              </Link>
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                Sign Out
+              </Button>
+            </>
+          ) : (
+            <Link href="/auth/login">
+              <Button variant="ghost" size="sm">
+                Sign In
+              </Button>
+            </Link>
+          )}
           <Link href="/book">
             <Button size="sm">Book a Transfer</Button>
           </Link>
@@ -71,7 +103,7 @@ function Header() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden border-t border-border animate-fade-in">
+        <div className="md:hidden border-t border-border animate-slide-up" style={{ animationDuration: "0.25s" }}>
           <div className="px-6 py-4 flex flex-col gap-4">
             {navLinks.map((link) => (
               <Link
@@ -85,11 +117,31 @@ function Header() {
             ))}
             <div className="gold-divider" />
             <div className="flex flex-col gap-2">
-              <Link href="/auth/login" onClick={() => setMenuOpen(false)}>
-                <Button variant="outline" size="sm" className="w-full">
-                  Sign In
-                </Button>
-              </Link>
+              {loading ? null : user ? (
+                <>
+                  {isAdmin && (
+                    <Link href="/admin" onClick={() => setMenuOpen(false)}>
+                      <Button variant="ghost" size="sm" className="w-full">
+                        Admin Dashboard
+                      </Button>
+                    </Link>
+                  )}
+                  <Link href="/auth/account" onClick={() => setMenuOpen(false)}>
+                    <Button variant="outline" size="sm" className="w-full">
+                      My Account
+                    </Button>
+                  </Link>
+                  <Button variant="ghost" size="sm" className="w-full" onClick={handleLogout}>
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <Link href="/auth/login" onClick={() => setMenuOpen(false)}>
+                  <Button variant="outline" size="sm" className="w-full">
+                    Sign In
+                  </Button>
+                </Link>
+              )}
               <Link href="/book" onClick={() => setMenuOpen(false)}>
                 <Button size="sm" className="w-full">
                   Book a Transfer

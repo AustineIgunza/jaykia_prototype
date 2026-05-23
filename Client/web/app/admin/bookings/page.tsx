@@ -7,6 +7,8 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
+import { SkeletonTable } from "@/components/ui/skeleton";
+import { FadeIn } from "@/components/motion";
 import { useApi } from "@/lib/api/use-api";
 import type { Booking, TripStatus } from "@/lib/api/types";
 import type { BadgeVariant } from "@/components/ui/status-badge";
@@ -59,9 +61,10 @@ export default function AdminBookingsPage() {
     }
   }
 
-  if (loading) return <p className="text-muted animate-pulse">Loading bookings&hellip;</p>;
+  if (loading) return <SkeletonTable rows={6} />;
 
   return (
+    <FadeIn>
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-display text-2xl font-bold">Bookings</h1>
@@ -175,5 +178,6 @@ export default function AdminBookingsPage() {
         )}
       </Modal>
     </div>
+    </FadeIn>
   );
 }

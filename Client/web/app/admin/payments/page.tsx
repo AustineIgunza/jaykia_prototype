@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { SkeletonTable } from "@/components/ui/skeleton";
+import { FadeIn } from "@/components/motion";
 import { useApi } from "@/lib/api/use-api";
 import type { Payment } from "@/lib/api/types";
 
@@ -17,11 +19,12 @@ export default function AdminPaymentsPage() {
     api.getPayments().then(setPayments).finally(() => setLoading(false));
   }, [api]);
 
-  if (loading) return <p className="text-muted animate-pulse">Loading payments&hellip;</p>;
+  if (loading) return <SkeletonTable rows={5} />;
 
   const total = payments.reduce((sum, p) => sum + p.amount, 0);
 
   return (
+    <FadeIn>
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-display text-2xl font-bold">Payments</h1>
@@ -74,5 +77,6 @@ export default function AdminPaymentsPage() {
         </CardContent>
       </Card>
     </div>
+    </FadeIn>
   );
 }

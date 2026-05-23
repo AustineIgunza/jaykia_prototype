@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Textarea, Select } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { GoldDivider } from "@/components/ui/gold-divider";
+import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 import { useApi } from "@/lib/api/use-api";
 import type { FeedbackType } from "@/lib/api/types";
 
@@ -45,16 +47,23 @@ export default function ContactPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-16">
-      <p className="text-sm uppercase tracking-[0.25em] text-accent mb-3 text-center">Get in Touch</p>
-      <h1 className="font-display text-3xl md:text-4xl font-bold text-center mb-4">
-        Contact Us
-      </h1>
-      <p className="text-muted text-center mb-12">
-        Have a question, concern, or just want to say hello? We&rsquo;d love to hear from you.
-      </p>
+      <FadeIn direction="none">
+        <p className="text-sm uppercase tracking-[0.25em] text-accent mb-3 text-center">Get in Touch</p>
+      </FadeIn>
+      <FadeIn delay={0.1}>
+        <h1 className="font-display text-3xl md:text-4xl font-bold text-center mb-4">
+          Contact Us
+        </h1>
+      </FadeIn>
+      <FadeIn delay={0.2}>
+        <p className="text-muted text-center mb-12">
+          Have a question, concern, or just want to say hello? We&rsquo;d love to hear from you.
+        </p>
+      </FadeIn>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <Stagger className="grid grid-cols-1 md:grid-cols-2 gap-8" staggerDelay={0.15}>
         {/* Contact Info */}
+        <StaggerItem>
         <div className="space-y-6">
           <div>
             <h2 className="font-display text-lg font-semibold mb-4">Reach Us Directly</h2>
@@ -103,18 +112,27 @@ export default function ContactPage() {
             </p>
           </div>
         </div>
+        </StaggerItem>
 
         {/* Feedback Form */}
+        <StaggerItem>
         <Card>
           <CardContent>
+            <AnimatePresence mode="wait">
             {submitted ? (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-3">&#10003;</div>
+              <motion.div
+                key="success"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4 }}
+                className="text-center py-8"
+              >
+                <div className="text-4xl mb-3 text-success">&#10003;</div>
                 <h3 className="font-display text-lg font-semibold mb-2">Thank you!</h3>
                 <p className="text-sm text-muted">
                   Your feedback has been received. We&rsquo;ll get back to you if needed.
                 </p>
-              </div>
+              </motion.div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
                 <h2 className="font-display text-lg font-semibold">Send Us a Message</h2>
@@ -136,9 +154,11 @@ export default function ContactPage() {
                 </Button>
               </form>
             )}
+            </AnimatePresence>
           </CardContent>
         </Card>
-      </div>
+        </StaggerItem>
+      </Stagger>
     </div>
   );
 }

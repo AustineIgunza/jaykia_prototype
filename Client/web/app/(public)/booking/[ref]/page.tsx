@@ -4,6 +4,8 @@ import { useEffect, useState, use } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { GoldDivider } from "@/components/ui/gold-divider";
+import { Skeleton } from "@/components/ui/skeleton";
+import { FadeIn } from "@/components/motion";
 import { useApi } from "@/lib/api/use-api";
 import type { Booking } from "@/lib/api/types";
 import type { BadgeVariant } from "@/components/ui/status-badge";
@@ -32,8 +34,17 @@ export default function BookingTrackingPage({ params }: { params: Promise<{ ref:
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-muted animate-pulse">Loading booking&hellip;</p>
+      <div className="max-w-2xl mx-auto px-6 py-16 space-y-4">
+        <Skeleton className="h-10 w-48 mx-auto" />
+        <Skeleton className="h-5 w-32 mx-auto" />
+        <div className="bg-surface border border-border rounded-[var(--radius-lg)] p-6 space-y-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="flex justify-between">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -52,6 +63,7 @@ export default function BookingTrackingPage({ params }: { params: Promise<{ ref:
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-16">
+      <FadeIn>
       <h1 className="font-display text-3xl md:text-4xl font-bold text-center mb-2">
         Booking Details
       </h1>
@@ -112,6 +124,7 @@ export default function BookingTrackingPage({ params }: { params: Promise<{ ref:
           </div>
         </CardContent>
       </Card>
+      </FadeIn>
     </div>
   );
 }

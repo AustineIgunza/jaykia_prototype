@@ -18,8 +18,15 @@ function Modal({ open, onClose, title, children }: ModalProps) {
 
     if (open) {
       dialog.showModal();
+      // Trigger enter animation
+      requestAnimationFrame(() => {
+        dialog.classList.add("modal-visible");
+      });
     } else {
-      dialog.close();
+      dialog.classList.remove("modal-visible");
+      // Wait for exit animation before closing
+      const timeout = setTimeout(() => dialog.close(), 200);
+      return () => clearTimeout(timeout);
     }
   }, [open]);
 
@@ -37,7 +44,7 @@ function Modal({ open, onClose, title, children }: ModalProps) {
       ref={dialogRef}
       aria-modal="true"
       aria-labelledby={title ? "modal-title" : undefined}
-      className="bg-surface border border-border rounded-[var(--radius-lg)] p-0 text-foreground backdrop:bg-black/60 max-w-lg w-full"
+      className="bg-surface border border-border rounded-[var(--radius-lg)] p-0 text-foreground max-w-lg w-full opacity-0 scale-95 transition-all duration-200 ease-out [&.modal-visible]:opacity-100 [&.modal-visible]:scale-100 backdrop:bg-black/60 backdrop:transition-opacity backdrop:duration-200"
       onClick={(e) => {
         if (e.target === dialogRef.current) onClose();
       }}

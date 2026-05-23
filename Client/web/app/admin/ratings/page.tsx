@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { SkeletonTable } from "@/components/ui/skeleton";
+import { FadeIn } from "@/components/motion";
 import { useApi } from "@/lib/api/use-api";
 import type { Rating } from "@/lib/api/types";
 
@@ -25,13 +27,14 @@ export default function AdminRatingsPage() {
     api.getRatings().then(setRatings).finally(() => setLoading(false));
   }, [api]);
 
-  if (loading) return <p className="text-muted animate-pulse">Loading ratings&hellip;</p>;
+  if (loading) return <SkeletonTable rows={5} />;
 
   const avg = ratings.length > 0
     ? (ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length).toFixed(1)
     : "0";
 
   return (
+    <FadeIn>
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-display text-2xl font-bold">Ratings</h1>
@@ -80,5 +83,6 @@ export default function AdminRatingsPage() {
         </CardContent>
       </Card>
     </div>
+    </FadeIn>
   );
 }

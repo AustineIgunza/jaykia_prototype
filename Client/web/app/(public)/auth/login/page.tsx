@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { FadeIn } from "@/components/motion";
 import { useAuth } from "@/lib/auth/context";
 
 export default function LoginPage() {
@@ -32,7 +33,8 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-[70vh] px-6">
-      <Card className="w-full max-w-md">
+      <FadeIn className="w-full max-w-md">
+      <Card>
         <CardContent>
           <h1 className="font-display text-2xl font-bold text-center mb-2">Welcome Back</h1>
           <p className="text-sm text-muted text-center mb-8">
@@ -74,6 +76,7 @@ export default function LoginPage() {
           </p>
         </CardContent>
       </Card>
+      </FadeIn>
     </div>
   );
 }

@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea, Select } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { GoldDivider } from "@/components/ui/gold-divider";
+import { FadeIn } from "@/components/motion";
 import { useApi } from "@/lib/api/use-api";
 import type { CreateBookingDTO, TransportMode, CreatePaymentDTO, PayMethod } from "@/lib/api/types";
 
@@ -154,19 +156,21 @@ export default function BookPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-16">
-      <h1 className="font-display text-3xl md:text-4xl font-bold text-center mb-2">
-        Book a Transfer
-      </h1>
-      <p className="text-muted text-center mb-10">
-        Fill in your details and we&rsquo;ll confirm your executive airport transfer.
-      </p>
+      <FadeIn>
+        <h1 className="font-display text-3xl md:text-4xl font-bold text-center mb-2">
+          Book a Transfer
+        </h1>
+        <p className="text-muted text-center mb-10">
+          Fill in your details and we&rsquo;ll confirm your executive airport transfer.
+        </p>
+      </FadeIn>
 
       {/* Step indicator */}
       <div className="flex items-center justify-center gap-2 mb-10">
         {(["details", "review", "payment", "confirmation"] as Step[]).map((s, i) => (
           <div key={s} className="flex items-center gap-2">
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold border ${
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold border transition-all duration-300 ${
                 step === s
                   ? "bg-accent text-background border-accent"
                   : i < ["details", "review", "payment", "confirmation"].indexOf(step)
@@ -180,6 +184,15 @@ export default function BookPage() {
           </div>
         ))}
       </div>
+
+      <AnimatePresence mode="wait">
+      <motion.div
+        key={step}
+        initial={{ opacity: 0, x: 30 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -30 }}
+        transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+      >
 
       {/* Step: Details */}
       {step === "details" && (
@@ -448,7 +461,7 @@ export default function BookPage() {
       {step === "confirmation" && (
         <Card>
           <CardContent className="text-center py-10">
-            <div className="text-5xl mb-4">&#10003;</div>
+            <div className="text-5xl mb-4 text-success">&#10003;</div>
             <h2 className="font-display text-2xl font-bold mb-2">Booking Confirmed!</h2>
             <p className="text-muted mb-4">
               Your booking reference is{" "}
@@ -475,6 +488,9 @@ export default function BookPage() {
           </CardContent>
         </Card>
       )}
+
+      </motion.div>
+      </AnimatePresence>
     </div>
   );
 }

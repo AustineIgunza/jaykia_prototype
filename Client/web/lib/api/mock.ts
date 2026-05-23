@@ -65,9 +65,15 @@ const roles = [...mockRoles];
 // Simulated logged-in user (set after login/register)
 let currentUserId = "u-001";
 
-// Fake JWT for mock auth
-const fakeToken =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1LTAwMSIsImV4cCI6OTk5OTk5OTk5OX0.mock";
+// Build a fake JWT-shaped token so parseJwtPayload can extract userId
+function makeFakeToken(userId: string): string {
+  const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const payload = btoa(JSON.stringify({ userId, exp: 9999999999 }));
+  return `${header}.${payload}.mock`;
+}
+
+// Admin mock credentials: admin@jaykia.co.ke / any password
+const ADMIN_EMAIL = "admin@jaykia.co.ke";
 
 export const mockClient: ApiClient = {
   // Auth
@@ -85,20 +91,24 @@ export const mockClient: ApiClient = {
     };
     users.push(newUser);
     currentUserId = newUser.id;
-    return { accessToken: fakeToken, refreshToken: `refresh_${uid()}` };
+    return { accessToken: makeFakeToken(newUser.id), refreshToken: `refresh_${uid()}` };
   },
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async login(_details: LegacyLoginDetails): Promise<AuthResponse> {
+  async login(details: LegacyLoginDetails): Promise<AuthResponse> {
     await delay();
-    currentUserId = "u-001";
-    return { accessToken: fakeToken, refreshToken: `refresh_${uid()}` };
+    // admin@jaykia.co.ke → admin user, anything else → regular customer
+    if (details.email.toLowerCase() === ADMIN_EMAIL) {
+      currentUserId = "u-admin";
+    } else {
+      currentUserId = "u-001";
+    }
+    return { accessToken: makeFakeToken(currentUserId), refreshToken: `refresh_${uid()}` };
   },
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async refreshToken(_refreshToken: string): Promise<AuthRefreshToken> {
     await delay();
-    return { accessToken: fakeToken };
+    return { accessToken: makeFakeToken(currentUserId) };
   },
 
   // Users

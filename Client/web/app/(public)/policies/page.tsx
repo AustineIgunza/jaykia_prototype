@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { GoldDivider } from "@/components/ui/gold-divider";
+import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 
 export const metadata: Metadata = {
   title: "Policies",
@@ -104,30 +105,38 @@ const policies = [
 export default function PoliciesPage() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-16">
-      <p className="text-sm uppercase tracking-[0.25em] text-accent mb-3 text-center">Legal</p>
-      <h1 className="font-display text-3xl md:text-4xl font-bold text-center mb-4">
-        Customer Policies
-      </h1>
-      <p className="text-muted text-center mb-12">
-        Please review our policies below. By booking with JayKia, you agree to these terms.
-      </p>
+      <FadeIn direction="none">
+        <p className="text-sm uppercase tracking-[0.25em] text-accent mb-3 text-center">Legal</p>
+      </FadeIn>
+      <FadeIn delay={0.1}>
+        <h1 className="font-display text-3xl md:text-4xl font-bold text-center mb-4">
+          Customer Policies
+        </h1>
+      </FadeIn>
+      <FadeIn delay={0.2}>
+        <p className="text-muted text-center mb-12">
+          Please review our policies below. By booking with JayKia, you agree to these terms.
+        </p>
+      </FadeIn>
 
-      <div className="space-y-10">
+      <Stagger className="space-y-10" staggerDelay={0.08}>
         {policies.map((policy) => (
-          <section key={policy.title}>
-            <h2 className="font-display text-xl font-semibold mb-4">{policy.title}</h2>
-            <ul className="space-y-2">
-              {policy.content.map((item, i) => (
-                <li key={i} className="flex gap-3 text-sm text-muted-light leading-relaxed">
-                  <span className="text-accent mt-0.5 shrink-0">&bull;</span>
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <GoldDivider className="mt-8" />
-          </section>
+          <StaggerItem key={policy.title}>
+            <section>
+              <h2 className="font-display text-xl font-semibold mb-4">{policy.title}</h2>
+              <ul className="space-y-2">
+                {policy.content.map((item, i) => (
+                  <li key={i} className="flex gap-3 text-sm text-muted-light leading-relaxed">
+                    <span className="text-accent mt-0.5 shrink-0">&bull;</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <GoldDivider className="mt-8" />
+            </section>
+          </StaggerItem>
         ))}
-      </div>
+      </Stagger>
     </div>
   );
 }

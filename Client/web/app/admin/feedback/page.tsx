@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { SkeletonTable } from "@/components/ui/skeleton";
+import { FadeIn } from "@/components/motion";
 import { useApi } from "@/lib/api/use-api";
 import type { Feedback } from "@/lib/api/types";
 import type { BadgeVariant } from "@/components/ui/status-badge";
@@ -24,9 +26,10 @@ export default function AdminFeedbackPage() {
     api.getFeedback().then(setFeedback).finally(() => setLoading(false));
   }, [api]);
 
-  if (loading) return <p className="text-muted animate-pulse">Loading feedback&hellip;</p>;
+  if (loading) return <SkeletonTable rows={4} />;
 
   return (
+    <FadeIn>
     <div>
       <h1 className="font-display text-2xl font-bold mb-6">Feedback</h1>
 
@@ -71,5 +74,6 @@ export default function AdminFeedbackPage() {
         </CardContent>
       </Card>
     </div>
+    </FadeIn>
   );
 }

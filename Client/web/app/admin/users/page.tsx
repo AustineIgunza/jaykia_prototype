@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { GoldDivider } from "@/components/ui/gold-divider";
+import { SkeletonTable } from "@/components/ui/skeleton";
+import { FadeIn } from "@/components/motion";
 import { useApi } from "@/lib/api/use-api";
 import type { PublicUserDTO, Role, UserSpecificRoles } from "@/lib/api/types";
 
@@ -74,9 +76,10 @@ export default function AdminUsersPage() {
     }
   }
 
-  if (loading) return <p className="text-muted animate-pulse">Loading users&hellip;</p>;
+  if (loading) return <SkeletonTable rows={5} />;
 
   return (
+    <FadeIn>
     <div>
       <h1 className="font-display text-2xl font-bold mb-6">Users &amp; Roles</h1>
 
@@ -203,5 +206,6 @@ export default function AdminUsersPage() {
         )}
       </Modal>
     </div>
+    </FadeIn>
   );
 }

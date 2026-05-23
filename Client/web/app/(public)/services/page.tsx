@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { GoldDivider } from "@/components/ui/gold-divider";
+import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 
 export const metadata: Metadata = {
   title: "Services",
@@ -52,37 +53,45 @@ export default function ServicesPage() {
     <div>
       {/* Hero */}
       <section className="px-6 py-20 text-center">
-        <p className="text-sm uppercase tracking-[0.25em] text-accent mb-3">Our Services</p>
-        <h1 className="font-display text-3xl md:text-5xl font-bold max-w-3xl mx-auto mb-4">
-          Premium transfers, not just a ride
-        </h1>
-        <p className="text-muted max-w-xl mx-auto">
-          Every JayKia transfer is a complete experience\u2014from the moment you land to the moment you arrive at your destination.
-        </p>
+        <FadeIn direction="none">
+          <p className="text-sm uppercase tracking-[0.25em] text-accent mb-3">Our Services</p>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <h1 className="font-display text-3xl md:text-5xl font-bold max-w-3xl mx-auto mb-4">
+            Premium transfers, not just a ride
+          </h1>
+        </FadeIn>
+        <FadeIn delay={0.2}>
+          <p className="text-muted max-w-xl mx-auto">
+            Every JayKia transfer is a complete experience&mdash;from the moment you land to the moment you arrive at your destination.
+          </p>
+        </FadeIn>
       </section>
 
       <GoldDivider />
 
       {/* Core Services */}
       <section className="px-6 py-16 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <Stagger className="grid grid-cols-1 md:grid-cols-2 gap-8" staggerDelay={0.12}>
           {services.map((s) => (
-            <Card key={s.title} hover>
-              <CardContent>
-                <h3 className="font-display text-xl font-semibold mb-3">{s.title}</h3>
-                <p className="text-sm text-muted leading-relaxed mb-4">{s.desc}</p>
-                <ul className="space-y-1">
-                  {s.features.map((f) => (
-                    <li key={f} className="text-sm text-muted-light flex items-start gap-2">
-                      <span className="text-accent mt-0.5">&#10003;</span>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+            <StaggerItem key={s.title}>
+              <Card hover>
+                <CardContent>
+                  <h3 className="font-display text-xl font-semibold mb-3">{s.title}</h3>
+                  <p className="text-sm text-muted leading-relaxed mb-4">{s.desc}</p>
+                  <ul className="space-y-1">
+                    {s.features.map((f) => (
+                      <li key={f} className="text-sm text-muted-light flex items-start gap-2">
+                        <span className="text-accent mt-0.5">&#10003;</span>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       </section>
 
       <GoldDivider />
@@ -90,22 +99,26 @@ export default function ServicesPage() {
       {/* Extras */}
       <section className="px-6 py-16 bg-surface">
         <div className="max-w-7xl mx-auto">
-          <h2 className="font-display text-3xl font-semibold text-center mb-4">
-            The JayKia Extras
-          </h2>
-          <p className="text-muted text-center max-w-xl mx-auto mb-12">
-            Complimentary add-ons that set us apart from every other transfer service.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <FadeIn>
+            <h2 className="font-display text-3xl font-semibold text-center mb-4">
+              The JayKia Extras
+            </h2>
+            <p className="text-muted text-center max-w-xl mx-auto mb-12">
+              Complimentary add-ons that set us apart from every other transfer service.
+            </p>
+          </FadeIn>
+          <Stagger className="grid grid-cols-1 md:grid-cols-3 gap-6" staggerDelay={0.12}>
             {extras.map((e) => (
-              <Card key={e.title}>
-                <CardContent>
-                  <h3 className="font-display text-lg font-semibold text-accent mb-2">{e.title}</h3>
-                  <p className="text-sm text-muted leading-relaxed">{e.desc}</p>
-                </CardContent>
-              </Card>
+              <StaggerItem key={e.title}>
+                <Card>
+                  <CardContent>
+                    <h3 className="font-display text-lg font-semibold text-accent mb-2">{e.title}</h3>
+                    <p className="text-sm text-muted leading-relaxed">{e.desc}</p>
+                  </CardContent>
+                </Card>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </div>
       </section>
 
@@ -113,13 +126,15 @@ export default function ServicesPage() {
 
       {/* CTA */}
       <section className="px-6 py-20 text-center">
-        <h2 className="font-display text-3xl font-semibold mb-4">Ready to experience JayKia?</h2>
-        <p className="text-muted max-w-md mx-auto mb-8">
-          Book your premium airport transfer in under two minutes.
-        </p>
-        <Link href="/book">
-          <Button size="lg">Book a Transfer</Button>
-        </Link>
+        <FadeIn>
+          <h2 className="font-display text-3xl font-semibold mb-4">Ready to experience JayKia?</h2>
+          <p className="text-muted max-w-md mx-auto mb-8">
+            Book your premium airport transfer in under two minutes.
+          </p>
+          <Link href="/book">
+            <Button size="lg">Book a Transfer</Button>
+          </Link>
+        </FadeIn>
       </section>
     </div>
   );

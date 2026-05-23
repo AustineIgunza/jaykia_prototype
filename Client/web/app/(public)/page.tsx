@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { GoldDivider } from "@/components/ui/gold-divider";
 import { Card, CardContent } from "@/components/ui/card";
+import { FadeIn, Stagger, StaggerItem, CountUp } from "@/components/motion";
 
 const valueProps = [
   {
@@ -59,6 +62,13 @@ const testimonials = [
   },
 ];
 
+const stats = [
+  { value: 1243, label: "Trips Completed", suffix: "+" },
+  { value: 847, label: "Clients Served", suffix: "+" },
+  { value: 312, label: "Repeat Clients", suffix: "+" },
+  { value: 10, label: "Hotel Partners", suffix: "+" },
+];
+
 function StarRating({ count }: { count: number }) {
   return (
     <span className="text-accent" aria-label={`${count} out of 5 stars`}>
@@ -73,79 +83,109 @@ export default function Home() {
     <div>
       {/* Hero */}
       <section className="relative flex flex-col items-center justify-center text-center px-6 py-32 md:py-44 overflow-hidden">
-        {/* Background gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background to-surface -z-10" />
-        <p className="text-sm uppercase tracking-[0.25em] text-accent mb-4 animate-fade-in">
-          Executive Airport Transfers &mdash; JKIA, Nairobi
-        </p>
-        <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold leading-tight max-w-4xl animate-slide-up">
-          Arrive happy, travel free
-        </h1>
-        <p className="mt-6 text-muted-light text-lg md:text-xl max-w-2xl animate-slide-up" style={{ animationDelay: "0.1s" }}>
-          Fixed pricing, professional uniformed drivers, branded vehicles.
-          We are not a taxi, not a rideshare&mdash;we are your personal airport transfer service.
-        </p>
-        <div className="mt-10 flex flex-col sm:flex-row gap-4 animate-slide-up" style={{ animationDelay: "0.2s" }}>
-          <Link href="/book">
-            <Button size="lg">Book a Transfer</Button>
-          </Link>
-          <Link href="/services">
-            <Button variant="outline" size="lg">
-              Our Services
-            </Button>
-          </Link>
-        </div>
+        <FadeIn delay={0} duration={0.7} direction="none">
+          <p className="text-sm uppercase tracking-[0.25em] text-accent mb-4">
+            Executive Airport Transfers &mdash; JKIA, Nairobi
+          </p>
+        </FadeIn>
+        <FadeIn delay={0.15} duration={0.8}>
+          <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold leading-tight max-w-4xl">
+            Arrive happy, travel free
+          </h1>
+        </FadeIn>
+        <FadeIn delay={0.3} duration={0.8}>
+          <p className="mt-6 text-muted-light text-lg md:text-xl max-w-2xl">
+            Fixed pricing, professional uniformed drivers, branded vehicles.
+            We are not a taxi, not a rideshare&mdash;we are your personal airport transfer service.
+          </p>
+        </FadeIn>
+        <FadeIn delay={0.5} duration={0.7}>
+          <div className="mt-10 flex flex-col sm:flex-row gap-4">
+            <Link href="/book">
+              <Button size="lg">Book a Transfer</Button>
+            </Link>
+            <Link href="/services">
+              <Button variant="outline" size="lg">
+                Our Services
+              </Button>
+            </Link>
+          </div>
+        </FadeIn>
       </section>
 
       <GoldDivider />
 
       {/* Value Propositions */}
       <section className="px-6 py-20 max-w-7xl mx-auto">
-        <h2 className="font-display text-3xl md:text-4xl font-semibold text-center mb-4">
-          Why JayKia?
-        </h2>
-        <p className="text-muted text-center max-w-xl mx-auto mb-12">
-          We built JayKia for travellers who value punctuality, comfort, and transparency above all else.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <FadeIn>
+          <h2 className="font-display text-3xl md:text-4xl font-semibold text-center mb-4">
+            Why JayKia?
+          </h2>
+          <p className="text-muted text-center max-w-xl mx-auto mb-12">
+            We built JayKia for travellers who value punctuality, comfort, and transparency above all else.
+          </p>
+        </FadeIn>
+        <Stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" staggerDelay={0.12}>
           {valueProps.map((vp) => (
-            <Card key={vp.title} hover>
-              <CardContent>
-                <div className="text-3xl mb-4">{vp.icon}</div>
-                <h3 className="font-display text-lg font-semibold mb-2">{vp.title}</h3>
-                <p className="text-sm text-muted leading-relaxed">{vp.desc}</p>
-              </CardContent>
-            </Card>
+            <StaggerItem key={vp.title}>
+              <Card hover>
+                <CardContent>
+                  <div className="text-3xl mb-4">{vp.icon}</div>
+                  <h3 className="font-display text-lg font-semibold mb-2">{vp.title}</h3>
+                  <p className="text-sm text-muted leading-relaxed">{vp.desc}</p>
+                </CardContent>
+              </Card>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
+      </section>
+
+      <GoldDivider />
+
+      {/* Stats */}
+      <section className="px-6 py-16 bg-surface">
+        <Stagger className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center" staggerDelay={0.15}>
+          {stats.map((stat) => (
+            <StaggerItem key={stat.label}>
+              <div>
+                <div className="font-display text-3xl md:text-4xl font-bold text-accent">
+                  <CountUp value={stat.value} suffix={stat.suffix} />
+                </div>
+                <p className="text-sm text-muted mt-1">{stat.label}</p>
+              </div>
+            </StaggerItem>
+          ))}
+        </Stagger>
       </section>
 
       <GoldDivider />
 
       {/* Fleet Preview */}
-      <section className="px-6 py-20 bg-surface">
+      <section className="px-6 py-20">
         <div className="max-w-7xl mx-auto">
-          <h2 className="font-display text-3xl md:text-4xl font-semibold text-center mb-4">
-            Our Fleet
-          </h2>
-          <p className="text-muted text-center max-w-xl mx-auto mb-12">
-            Executive sedans and SUVs maintained to the highest standard. Every vehicle is air-conditioned, immaculate, and comfortable.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <FadeIn>
+            <h2 className="font-display text-3xl md:text-4xl font-semibold text-center mb-4">
+              Our Fleet
+            </h2>
+            <p className="text-muted text-center max-w-xl mx-auto mb-12">
+              Executive sedans and SUVs maintained to the highest standard. Every vehicle is air-conditioned, immaculate, and comfortable.
+            </p>
+          </FadeIn>
+          <Stagger className="grid grid-cols-1 md:grid-cols-3 gap-6" staggerDelay={0.15}>
             {["Executive Sedan", "Premium SUV", "Luxury Van"].map((vehicle) => (
-              <div
-                key={vehicle}
-                className="aspect-[16/10] rounded-[var(--radius-lg)] bg-background border border-border flex items-center justify-center"
-              >
-                {/* TODO: replace with real photography */}
-                <div className="text-center p-6">
-                  <div className="text-4xl mb-3 text-muted">&#128663;</div>
-                  <p className="font-display text-lg font-semibold">{vehicle}</p>
-                  <p className="text-xs text-muted mt-1">Photo coming soon</p>
+              <StaggerItem key={vehicle}>
+                <div className="aspect-[16/10] rounded-[var(--radius-lg)] bg-surface border border-border flex items-center justify-center transition-all duration-300 hover:border-accent/30 hover:shadow-[0_0_24px_rgba(200,162,75,0.06)]">
+                  {/* TODO: replace with real photography */}
+                  <div className="text-center p-6">
+                    <div className="text-4xl mb-3 text-muted">&#128663;</div>
+                    <p className="font-display text-lg font-semibold">{vehicle}</p>
+                    <p className="text-xs text-muted mt-1">Photo coming soon</p>
+                  </div>
                 </div>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </div>
       </section>
 
@@ -153,24 +193,28 @@ export default function Home() {
 
       {/* Signature Extras */}
       <section className="px-6 py-20 max-w-7xl mx-auto">
-        <h2 className="font-display text-3xl md:text-4xl font-semibold text-center mb-4">
-          The JayKia Extras
-        </h2>
-        <p className="text-muted text-center max-w-xl mx-auto mb-12">
-          Small touches that make a big difference, especially if you&rsquo;re visiting Kenya for the first time.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <FadeIn>
+          <h2 className="font-display text-3xl md:text-4xl font-semibold text-center mb-4">
+            The JayKia Extras
+          </h2>
+          <p className="text-muted text-center max-w-xl mx-auto mb-12">
+            Small touches that make a big difference, especially if you&rsquo;re visiting Kenya for the first time.
+          </p>
+        </FadeIn>
+        <Stagger className="grid grid-cols-1 md:grid-cols-3 gap-6" staggerDelay={0.12}>
           {extras.map((extra) => (
-            <Card key={extra.title} hover>
-              <CardContent>
-                <h3 className="font-display text-lg font-semibold mb-2 text-accent">
-                  {extra.title}
-                </h3>
-                <p className="text-sm text-muted leading-relaxed">{extra.desc}</p>
-              </CardContent>
-            </Card>
+            <StaggerItem key={extra.title}>
+              <Card hover>
+                <CardContent>
+                  <h3 className="font-display text-lg font-semibold mb-2 text-accent">
+                    {extra.title}
+                  </h3>
+                  <p className="text-sm text-muted leading-relaxed">{extra.desc}</p>
+                </CardContent>
+              </Card>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
       </section>
 
       <GoldDivider />
@@ -178,22 +222,26 @@ export default function Home() {
       {/* Social Proof / Testimonials */}
       <section className="px-6 py-20 bg-surface">
         <div className="max-w-7xl mx-auto">
-          <h2 className="font-display text-3xl md:text-4xl font-semibold text-center mb-12">
-            What Our Clients Say
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <FadeIn>
+            <h2 className="font-display text-3xl md:text-4xl font-semibold text-center mb-12">
+              What Our Clients Say
+            </h2>
+          </FadeIn>
+          <Stagger className="grid grid-cols-1 md:grid-cols-3 gap-6" staggerDelay={0.12}>
             {testimonials.map((t) => (
-              <Card key={t.name}>
-                <CardContent>
-                  <StarRating count={t.rating} />
-                  <p className="mt-3 text-sm text-muted-light leading-relaxed italic">
-                    &ldquo;{t.text}&rdquo;
-                  </p>
-                  <p className="mt-4 text-sm font-semibold text-foreground">{t.name}</p>
-                </CardContent>
-              </Card>
+              <StaggerItem key={t.name}>
+                <Card>
+                  <CardContent>
+                    <StarRating count={t.rating} />
+                    <p className="mt-3 text-sm text-muted-light leading-relaxed italic">
+                      &ldquo;{t.text}&rdquo;
+                    </p>
+                    <p className="mt-4 text-sm font-semibold text-foreground">{t.name}</p>
+                  </CardContent>
+                </Card>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </div>
       </section>
 
@@ -201,15 +249,17 @@ export default function Home() {
 
       {/* Final CTA */}
       <section className="px-6 py-24 text-center">
-        <h2 className="font-display text-3xl md:text-4xl font-semibold mb-4">
-          Ready for a better airport experience?
-        </h2>
-        <p className="text-muted max-w-lg mx-auto mb-8">
-          Book your executive JKIA transfer in under two minutes. Fixed pricing, no hidden fees.
-        </p>
-        <Link href="/book">
-          <Button size="lg">Book a Transfer</Button>
-        </Link>
+        <FadeIn>
+          <h2 className="font-display text-3xl md:text-4xl font-semibold mb-4">
+            Ready for a better airport experience?
+          </h2>
+          <p className="text-muted max-w-lg mx-auto mb-8">
+            Book your executive JKIA transfer in under two minutes. Fixed pricing, no hidden fees.
+          </p>
+          <Link href="/book">
+            <Button size="lg">Book a Transfer</Button>
+          </Link>
+        </FadeIn>
       </section>
     </div>
   );
