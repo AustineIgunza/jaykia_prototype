@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
@@ -51,6 +51,85 @@ export default function AccountPage() {
     notes: "",
   });
   const [editLoading, setEditLoading] = useState(false);
+
+  // 2FA state
+  const [twoFaStep, setTwoFaStep] = useState<"idle" | "setup" | "verify" | "backup" | "disable">("idle");
+  const [qrCodeUrl, setQrCodeUrl] = useState("");
+  const [secret, setSecret] = useState("");
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [twoFaCode, setTwoFaCode] = useState(["", "", "", "", "", ""]);
+  const [twoFaLoading, setTwoFaLoading] = useState(false);
+  const [twoFaError, setTwoFaError] = useState("");
+  const [twoFaEnabled, setTwoFaEnabled] = useState(false);
+  const twoFaRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  async function startSetup2FA() {
+    if (!api) return;
+    setTwoFaLoading(true);
+    setTwoFaError("");
+    try {
+      const res = await api.setup2FA();
+      setQrCodeUrl(res.qrCodeUrl);
+      setSecret(res.secret);
+      setTwoFaStep("setup");
+    } catch (err) {
+      setTwoFaError(err instanceof Error ? err.message : "Failed to start 2FA setup");
+    } finally {
+      setTwoFaLoading(false);
+    }
+  }
+
+  async function confirmSetup2FA() {
+    if (!api) return;
+    const code = twoFaCode.join("");
+    if (code.length !== 6) { setTwoFaError("Enter all 6 digits"); return; }
+    setTwoFaLoading(true);
+    setTwoFaError("");
+    try {
+      const res = await api.verifySetup2FA(code);
+      setBackupCodes(res.backupCodes);
+      setTwoFaEnabled(true);
+      setTwoFaStep("backup");
+    } catch (err) {
+      setTwoFaError(err instanceof Error ? err.message : "Invalid code");
+      setTwoFaCode(["", "", "", "", "", ""]);
+      twoFaRefs.current[0]?.focus();
+    } finally {
+      setTwoFaLoading(false);
+    }
+  }
+
+  async function disable2FA() {
+    if (!api) return;
+    const code = twoFaCode.join("");
+    if (code.length !== 6) { setTwoFaError("Enter all 6 digits"); return; }
+    setTwoFaLoading(true);
+    setTwoFaError("");
+    try {
+      await api.disable2FA(code);
+      setTwoFaEnabled(false);
+      setTwoFaStep("idle");
+      setTwoFaCode(["", "", "", "", "", ""]);
+    } catch (err) {
+      setTwoFaError(err instanceof Error ? err.message : "Invalid code");
+    } finally {
+      setTwoFaLoading(false);
+    }
+  }
+
+  function handleTwoFaInput(index: number, value: string) {
+    if (value && !/^\d$/.test(value)) return;
+    const next = [...twoFaCode];
+    next[index] = value;
+    setTwoFaCode(next);
+    if (value && index < 5) twoFaRefs.current[index + 1]?.focus();
+  }
+
+  function handleTwoFaKeyDown(index: number, e: React.KeyboardEvent) {
+    if (e.key === "Backspace" && !twoFaCode[index] && index > 0) {
+      twoFaRefs.current[index - 1]?.focus();
+    }
+  }
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -162,7 +241,142 @@ export default function AccountPage() {
 
         <GoldDivider />
 
-        <h2 className="font-display text-xl font-semibold mb-6">Booking History</h2>
+        {/* ─── Security Settings / 2FA ─── */}
+        <h2 className="font-display text-xl font-semibold mb-4 mt-8">Security</h2>
+
+        <Card className="mb-8">
+          <CardContent>
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <p className="font-semibold">Two-Factor Authentication</p>
+                <p className="text-sm text-muted">
+                  {twoFaEnabled
+                    ? "Your account is protected with 2FA"
+                    : "Add an extra layer of security to your account"}
+                </p>
+              </div>
+              {twoFaStep === "idle" && (
+                twoFaEnabled ? (
+                  <Button variant="outline" size="sm" onClick={() => { setTwoFaStep("disable"); setTwoFaCode(["","","","","",""]); setTwoFaError(""); }}>
+                    Disable 2FA
+                  </Button>
+                ) : (
+                  <Button size="sm" loading={twoFaLoading} onClick={startSetup2FA}>
+                    Enable 2FA
+                  </Button>
+                )
+              )}
+            </div>
+
+            {/* Setup step — QR code */}
+            {twoFaStep === "setup" && (
+              <div className="mt-4 border-t border-border pt-4">
+                <p className="text-sm text-muted mb-3">
+                  Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)
+                </p>
+                <div className="flex flex-col items-center gap-4 mb-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={qrCodeUrl}
+                    alt="2FA QR Code"
+                    width={200}
+                    height={200}
+                    className="rounded-[var(--radius-md)] bg-white p-2"
+                  />
+                  <div className="text-center">
+                    <p className="text-xs text-muted mb-1">Or enter this code manually:</p>
+                    <code className="text-sm font-mono text-accent bg-surface px-3 py-1 rounded-[var(--radius-sm)] select-all">
+                      {secret}
+                    </code>
+                  </div>
+                </div>
+
+                <p className="text-sm text-muted mb-2">Enter the 6-digit code from your app:</p>
+                <div className="flex justify-center gap-2 mb-3">
+                  {twoFaCode.map((d, i) => (
+                    <input
+                      key={i}
+                      ref={(el) => { twoFaRefs.current[i] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={d}
+                      onChange={(e) => handleTwoFaInput(i, e.target.value)}
+                      onKeyDown={(e) => handleTwoFaKeyDown(i, e)}
+                      className="w-11 h-12 text-center text-lg font-bold rounded-[var(--radius-md)] border border-border bg-surface text-foreground focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-colors"
+                    />
+                  ))}
+                </div>
+                {twoFaError && <p className="text-sm text-error text-center mb-2">{twoFaError}</p>}
+                <div className="flex gap-2 justify-center">
+                  <Button variant="ghost" size="sm" onClick={() => { setTwoFaStep("idle"); setTwoFaCode(["","","","","",""]); setTwoFaError(""); }}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" loading={twoFaLoading} onClick={confirmSetup2FA} disabled={twoFaCode.some((d) => !d)}>
+                    Verify &amp; Enable
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Backup codes */}
+            {twoFaStep === "backup" && (
+              <div className="mt-4 border-t border-border pt-4">
+                <div className="bg-accent/5 border border-accent/20 rounded-[var(--radius-md)] p-4 mb-4">
+                  <p className="text-sm font-semibold text-accent mb-2">Save your backup codes</p>
+                  <p className="text-xs text-muted mb-3">
+                    Store these codes somewhere safe. Each code can only be used once if you lose access to your authenticator app.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {backupCodes.map((code) => (
+                      <code key={code} className="text-sm font-mono text-foreground bg-surface px-3 py-1.5 rounded-[var(--radius-sm)] text-center">
+                        {code}
+                      </code>
+                    ))}
+                  </div>
+                </div>
+                <Button size="sm" className="w-full" onClick={() => { setTwoFaStep("idle"); setTwoFaCode(["","","","","",""]); }}>
+                  Done
+                </Button>
+              </div>
+            )}
+
+            {/* Disable step */}
+            {twoFaStep === "disable" && (
+              <div className="mt-4 border-t border-border pt-4">
+                <p className="text-sm text-muted mb-2">Enter a code from your authenticator app to disable 2FA:</p>
+                <div className="flex justify-center gap-2 mb-3">
+                  {twoFaCode.map((d, i) => (
+                    <input
+                      key={i}
+                      ref={(el) => { twoFaRefs.current[i] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={d}
+                      onChange={(e) => handleTwoFaInput(i, e.target.value)}
+                      onKeyDown={(e) => handleTwoFaKeyDown(i, e)}
+                      className="w-11 h-12 text-center text-lg font-bold rounded-[var(--radius-md)] border border-border bg-surface text-foreground focus:border-accent focus:ring-1 focus:ring-accent outline-none transition-colors"
+                    />
+                  ))}
+                </div>
+                {twoFaError && <p className="text-sm text-error text-center mb-2">{twoFaError}</p>}
+                <div className="flex gap-2 justify-center">
+                  <Button variant="ghost" size="sm" onClick={() => { setTwoFaStep("idle"); setTwoFaCode(["","","","","",""]); setTwoFaError(""); }}>
+                    Cancel
+                  </Button>
+                  <Button variant="danger" size="sm" loading={twoFaLoading} onClick={disable2FA} disabled={twoFaCode.some((d) => !d)}>
+                    Disable 2FA
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <GoldDivider />
+
+        <h2 className="font-display text-xl font-semibold mb-6 mt-6">Booking History</h2>
       </FadeIn>
 
       {loading ? (

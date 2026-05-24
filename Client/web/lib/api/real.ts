@@ -10,6 +10,8 @@ import type {
   LegacyLoginDetails,
   AuthResponse,
   AuthRefreshToken,
+  TwoFactorSetupResponse,
+  TwoFactorVerifySetupResponse,
   Role,
   CreateRoleDTO,
   UpdateRoleDTO,
@@ -82,6 +84,28 @@ export const realClient: ApiClient = {
     request<AuthRefreshToken>("/auth/refresh", {
       method: "POST",
       body: JSON.stringify({ refreshToken }),
+    }),
+
+  // 2FA
+  setup2FA: () =>
+    request<TwoFactorSetupResponse>("/auth/2fa/setup", { method: "POST" }),
+
+  verifySetup2FA: (code: string) =>
+    request<TwoFactorVerifySetupResponse>("/auth/2fa/verify-setup", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    }),
+
+  verify2FA: (tempToken: string, code: string) =>
+    request<AuthResponse>("/auth/2fa/verify", {
+      method: "POST",
+      body: JSON.stringify({ tempToken, code }),
+    }),
+
+  disable2FA: (code: string) =>
+    request<void>("/auth/2fa/disable", {
+      method: "POST",
+      body: JSON.stringify({ code }),
     }),
 
   // Users

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/context";
 
@@ -17,6 +17,7 @@ function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { user, loading, logout, isAdmin } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   function handleLogout() {
     logout();
@@ -40,9 +41,16 @@ function Header() {
             <li key={link.href}>
               <Link
                 href={link.href}
-                className="text-sm text-muted-light hover:text-foreground transition-colors"
+                className={`text-sm transition-colors ${
+                  pathname === link.href
+                    ? "text-accent font-medium"
+                    : "text-muted-light hover:text-foreground"
+                }`}
               >
                 {link.label}
+                {pathname === link.href && (
+                  <span className="block h-0.5 mt-1 rounded-full bg-accent" />
+                )}
               </Link>
             </li>
           ))}
@@ -109,7 +117,11 @@ function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm text-muted-light hover:text-foreground transition-colors py-1"
+                className={`text-sm py-1 transition-colors ${
+                  pathname === link.href
+                    ? "text-accent font-medium border-l-2 border-accent pl-3"
+                    : "text-muted-light hover:text-foreground"
+                }`}
                 onClick={() => setMenuOpen(false)}
               >
                 {link.label}

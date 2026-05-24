@@ -10,6 +10,8 @@ import type {
   LegacyLoginDetails,
   AuthResponse,
   AuthRefreshToken,
+  TwoFactorSetupResponse,
+  TwoFactorVerifySetupResponse,
   Role,
   CreateRoleDTO,
   UpdateRoleDTO,
@@ -38,6 +40,12 @@ export interface ApiClient {
   register(details: LegacySignupDetails): Promise<AuthResponse>;
   login(details: LegacyLoginDetails): Promise<AuthResponse>;
   refreshToken(refreshToken: string): Promise<AuthRefreshToken>;
+
+  // 2FA
+  setup2FA(): Promise<TwoFactorSetupResponse>;
+  verifySetup2FA(code: string): Promise<TwoFactorVerifySetupResponse>;
+  verify2FA(tempToken: string, code: string): Promise<AuthResponse>;
+  disable2FA(code: string): Promise<void>;
 
   // Users
   getUsers(): Promise<PublicUserDTO[]>;

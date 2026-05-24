@@ -113,6 +113,97 @@ body {
   }
 }
 
+/* ─── Animated background (GPU-composited) ─── */
+
+@keyframes jk-float-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(60px, -50px) scale(1.15); }
+  50% { transform: translate(-40px, 30px) scale(0.9); }
+  75% { transform: translate(30px, -20px) scale(1.05); }
+}
+
+@keyframes jk-float-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  30% { transform: translate(-50px, 40px) scale(1.1); }
+  60% { transform: translate(70px, -60px) scale(0.85); }
+}
+
+@keyframes jk-float-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  35% { transform: translate(40px, 50px) scale(1.2); }
+  70% { transform: translate(-60px, -30px) scale(0.9); }
+}
+
+@keyframes jk-float-4 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  20% { transform: translate(-30px, -60px) scale(1.1); }
+  50% { transform: translate(50px, 40px) scale(0.95); }
+  80% { transform: translate(-20px, 20px) scale(1.15); }
+}
+
+@keyframes jk-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); opacity: var(--p-opacity, 0.25); }
+  25% { transform: translate(80px, -60px) scale(1.5); opacity: calc(var(--p-opacity, 0.25) * 1.4); }
+  50% { transform: translate(-50px, 40px) scale(0.7); opacity: calc(var(--p-opacity, 0.25) * 0.5); }
+  75% { transform: translate(30px, -30px) scale(1.2); opacity: var(--p-opacity, 0.25); }
+}
+
+@keyframes jk-sweep {
+  0%, 100% { transform: translateY(-120px) scaleX(0.6); opacity: 0.03; }
+  50% { transform: translateY(120px) scaleX(1); opacity: 0.08; }
+}
+
+.jk-orb {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--jk-gold) 0%, var(--jk-gold-dark) 40%, transparent 70%);
+  filter: blur(50px);
+  will-change: transform;
+}
+
+.jk-orb-1 {
+  width: 380px; height: 380px; left: 8%; top: 12%;
+  animation: jk-float-1 20s ease-in-out infinite;
+}
+.jk-orb-2 {
+  width: 300px; height: 300px; right: 10%; top: 55%;
+  animation: jk-float-2 24s ease-in-out infinite;
+}
+.jk-orb-3 {
+  width: 250px; height: 250px; left: 45%; bottom: 10%;
+  animation: jk-float-3 18s ease-in-out infinite;
+}
+.jk-orb-4 {
+  width: 200px; height: 200px; right: 25%; top: 8%;
+  animation: jk-float-4 22s ease-in-out infinite;
+}
+
+.jk-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--jk-gold);
+  will-change: transform;
+  animation: jk-drift 12s ease-in-out infinite;
+}
+
+.jk-beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--jk-gold) 50%, transparent 100%);
+  will-change: transform;
+}
+
+.jk-beam-1 {
+  top: 35%;
+  animation: jk-sweep 28s ease-in-out infinite;
+}
+.jk-beam-2 {
+  top: 70%;
+  animation: jk-sweep 32s ease-in-out 8s infinite;
+}
+
 /* ─── Scrollbar styling ─── */
 
 ::-webkit-scrollbar {

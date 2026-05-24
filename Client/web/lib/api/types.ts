@@ -61,6 +61,17 @@ export interface OAuthLoginDetails {
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
+  requiresTwoFactor?: boolean;
+  tempToken?: string;
+}
+
+export interface TwoFactorSetupResponse {
+  qrCodeUrl: string;
+  secret: string;
+}
+
+export interface TwoFactorVerifySetupResponse {
+  backupCodes: string[];
 }
 
 export interface AuthRefreshToken {

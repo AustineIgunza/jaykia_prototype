@@ -11,6 +11,8 @@ import type {
   LegacyLoginDetails,
   AuthResponse,
   AuthRefreshToken,
+  TwoFactorSetupResponse,
+  TwoFactorVerifySetupResponse,
   Role,
   CreateRoleDTO,
   UpdateRoleDTO,
@@ -65,6 +67,9 @@ const roles = [...mockRoles];
 // Simulated logged-in user (set after login/register)
 let currentUserId = "u-001";
 
+// Mock 2FA state
+const twoFactorEnabled = new Set<string>();
+
 // Build a fake JWT-shaped token so parseJwtPayload can extract userId
 function makeFakeToken(userId: string): string {
   const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
@@ -102,6 +107,14 @@ export const mockClient: ApiClient = {
     } else {
       currentUserId = "u-001";
     }
+    if (twoFactorEnabled.has(currentUserId)) {
+      return {
+        accessToken: "",
+        refreshToken: "",
+        requiresTwoFactor: true,
+        tempToken: `temp_${makeFakeToken(currentUserId)}`,
+      };
+    }
     return { accessToken: makeFakeToken(currentUserId), refreshToken: `refresh_${uid()}` };
   },
 
@@ -109,6 +122,43 @@ export const mockClient: ApiClient = {
   async refreshToken(_refreshToken: string): Promise<AuthRefreshToken> {
     await delay();
     return { accessToken: makeFakeToken(currentUserId) };
+  },
+
+  // 2FA
+  async setup2FA(): Promise<TwoFactorSetupResponse> {
+    await delay();
+    return {
+      qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=otpauth://totp/JayKia:user@example.com?secret=JBSWY3DPEHPK3PXP&issuer=JayKia`,
+      secret: "JBSWY3DPEHPK3PXP",
+    };
+  },
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async verifySetup2FA(_code: string): Promise<TwoFactorVerifySetupResponse> {
+    await delay();
+    twoFactorEnabled.add(currentUserId);
+    return {
+      backupCodes: [
+        "A1B2-C3D4", "E5F6-G7H8", "J9K0-L1M2",
+        "N3P4-Q5R6", "S7T8-U9V0", "W1X2-Y3Z4",
+      ],
+    };
+  },
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async verify2FA(tempToken: string, _code: string): Promise<AuthResponse> {
+    await delay();
+    // Extract userId from tempToken
+    const realToken = tempToken.replace("temp_", "");
+    const payload = JSON.parse(atob(realToken.split(".")[1]));
+    currentUserId = payload.userId;
+    return { accessToken: makeFakeToken(currentUserId), refreshToken: `refresh_${uid()}` };
+  },
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async disable2FA(_code: string): Promise<void> {
+    await delay();
+    twoFactorEnabled.delete(currentUserId);
   },
 
   // Users

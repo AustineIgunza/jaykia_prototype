@@ -22,11 +22,21 @@ interface User {
   roles: string[];
 }
 
+export class TwoFactorRequiredError extends Error {
+  tempToken: string;
+  constructor(tempToken: string) {
+    super("Two-factor authentication required");
+    this.name = "TwoFactorRequiredError";
+    this.tempToken = tempToken;
+  }
+}
+
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (details: LegacyLoginDetails) => Promise<void>;
-  register: (details: LegacySignupDetails) => Promise<void>;
+  login: (details: LegacyLoginDetails) => Promise<User>;
+  register: (details: LegacySignupDetails) => Promise<User>;
+  verify2FA: (tempToken: string, code: string) => Promise<User>;
   logout: () => void;
   isAdmin: boolean;
 }
@@ -69,29 +79,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, []);
 
-  const handleAuthResponse = useCallback(async (res: AuthResponse) => {
+  const handleAuthResponse = useCallback(async (res: AuthResponse): Promise<User> => {
     setTokens(res.accessToken, res.refreshToken);
     const payload = parseJwtPayload(res.accessToken);
     const userId = (payload?.userId as string) || "unknown";
     const api = await getApiClient();
     const rolesData = await api.getUserRoles(userId);
-    setUser({ id: userId, roles: rolesData.roles });
+    const newUser: User = { id: userId, roles: rolesData.roles };
+    setUser(newUser);
+    return newUser;
   }, []);
 
   const login = useCallback(
-    async (details: LegacyLoginDetails) => {
+    async (details: LegacyLoginDetails): Promise<User> => {
       const api = await getApiClient();
       const res = await api.login(details);
-      await handleAuthResponse(res);
+      if (res.requiresTwoFactor && res.tempToken) {
+        throw new TwoFactorRequiredError(res.tempToken);
+      }
+      return handleAuthResponse(res);
     },
     [handleAuthResponse]
   );
 
   const register = useCallback(
-    async (details: LegacySignupDetails) => {
+    async (details: LegacySignupDetails): Promise<User> => {
       const api = await getApiClient();
       const res = await api.register(details);
-      await handleAuthResponse(res);
+      return handleAuthResponse(res);
+    },
+    [handleAuthResponse]
+  );
+
+  const verify2FA = useCallback(
+    async (tempToken: string, code: string): Promise<User> => {
+      const api = await getApiClient();
+      const res = await api.verify2FA(tempToken, code);
+      return handleAuthResponse(res);
     },
     [handleAuthResponse]
   );
@@ -104,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = user?.roles.includes("admin") ?? false;
 
   return (
-    <AuthContext value={{ user, loading, login, register, logout, isAdmin }}>
+    <AuthContext value={{ user, loading, login, register, verify2FA, logout, isAdmin }}>
       {children}
     </AuthContext>
   );
