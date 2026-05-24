@@ -3,7 +3,8 @@ CREATE TYPE pay_method AS ENUM('bank','mpesa');
 CREATE TABLE payments(
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-    amount INT NOT NULL,
+    booking_id UUID REFERENCES booking(id) ON DELETE CASCADE NOT NULL,
+    amount INT,
     payment_method pay_method NOT NULL,
     phone_number TEXT,
     transaction_reference TEXT,

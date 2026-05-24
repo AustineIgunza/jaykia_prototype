@@ -5,6 +5,7 @@ CREATE TABLE users(
     password TEXT,
     oauth BOOLEAN DEFAULT FALSE,
     oauth_provider TEXT,
+    is_verified BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT NOW(),
     deleted_at TIMESTAMP
 
