@@ -11,7 +11,7 @@ const httpServer: Server = http.createServer(
     (request: IncomingMessage, response: ServerResponse<IncomingMessage>) =>
       Router(db, request, response),
   ),
-  socketServer = new SocketIO(httpServer);
+  socketServer = new SocketIO(httpServer, db);
 
 httpServer.listen(PORT, () => {
   try {

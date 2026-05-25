@@ -4,6 +4,7 @@ export type LegacySignupDetails = {
   username: string;
   email: string;
   password: string;
+  profileImage: string;
 };
 export type LegacyLoginDetails = Pick<LegacySignupDetails, "password"> &
   Omit<LegacySignupDetails, "username">;

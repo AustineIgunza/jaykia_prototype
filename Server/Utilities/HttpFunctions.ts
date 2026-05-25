@@ -1,4 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "http";
+import type { AuthInfo } from "../Src/Middleware/AuthChecker.js";
+import type {
+  AuthRefreshToken,
+  AuthResponse,
+} from "../Src/Modules/Auth/auth.types.js";
 
 type ResponseMessage = {
   success: boolean;
@@ -48,6 +53,19 @@ export function sendResponseMessage(
       "Content-type": "application/json",
     });
   response.end(JSON.stringify(responseMsg));
+}
+export function sendAuthMessage(
+  statusCode: number,
+  authInfo: AuthResponse | AuthRefreshToken,
+  response: ServerResponse<IncomingMessage>,
+) {
+  if (!response.headersSent) {
+    response.writeHead(statusCode, {
+      "set-cookie": `token=${JSON.stringify(authInfo)}; HttpOnly; SameSite=Lax; Path=/`,
+      "content-type": "application/json",
+    });
+    response.end();
+  }
 }
 
 export const getRequestBody = async (request: IncomingMessage) => {
