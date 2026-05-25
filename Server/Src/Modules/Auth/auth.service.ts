@@ -51,7 +51,7 @@ export class AuthServ implements AuthService {
           authType,
           newUserDetails as LegacySignupDetails | OAuthSignupDetails,
         ),
-        publicUser = await this.createPublicUser(newUser),
+        publicUser = this.createPublicUser(newUser),
         publicUserTokens = encode_access_token(publicUser);
 
       return publicUserTokens;

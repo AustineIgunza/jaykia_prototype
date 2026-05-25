@@ -10,7 +10,9 @@ export class SocketIO {
       connectTimeout: 45000,
     });
 
-    this.ioSocket.on("booking", (bookingData: createBookingDTO) => {});
+    this.ioSocket.on("booking application", (bookingData: createBookingDTO) => {
+      this.ioSocket.emit("booking broadcast");
+    });
   }
 
   establishConnection() {
