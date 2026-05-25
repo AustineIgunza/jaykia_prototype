@@ -113,95 +113,101 @@ body {
   }
 }
 
-/* ─── Animated background (GPU-composited) ─── */
+/* ─── Animated background (lightweight, no blur filters) ─── */
 
-@keyframes jk-float-1 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  25% { transform: translate(60px, -50px) scale(1.15); }
-  50% { transform: translate(-40px, 30px) scale(0.9); }
-  75% { transform: translate(30px, -20px) scale(1.05); }
+/* Soft floating glow — uses large pre-blurred radial gradient instead of filter:blur */
+@keyframes jk-glow-drift-1 {
+  0%, 100% { transform: translate(0, 0); }
+  33% { transform: translate(40px, -30px); }
+  66% { transform: translate(-25px, 20px); }
 }
 
-@keyframes jk-float-2 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  30% { transform: translate(-50px, 40px) scale(1.1); }
-  60% { transform: translate(70px, -60px) scale(0.85); }
+@keyframes jk-glow-drift-2 {
+  0%, 100% { transform: translate(0, 0); }
+  40% { transform: translate(-35px, 45px); }
+  70% { transform: translate(30px, -20px); }
 }
 
-@keyframes jk-float-3 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  35% { transform: translate(40px, 50px) scale(1.2); }
-  70% { transform: translate(-60px, -30px) scale(0.9); }
+@keyframes jk-glow-drift-3 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(25px, 35px); }
 }
 
-@keyframes jk-float-4 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  20% { transform: translate(-30px, -60px) scale(1.1); }
-  50% { transform: translate(50px, 40px) scale(0.95); }
-  80% { transform: translate(-20px, 20px) scale(1.15); }
-}
-
-@keyframes jk-drift {
-  0%, 100% { transform: translate(0, 0) scale(1); opacity: var(--p-opacity, 0.25); }
-  25% { transform: translate(80px, -60px) scale(1.5); opacity: calc(var(--p-opacity, 0.25) * 1.4); }
-  50% { transform: translate(-50px, 40px) scale(0.7); opacity: calc(var(--p-opacity, 0.25) * 0.5); }
-  75% { transform: translate(30px, -30px) scale(1.2); opacity: var(--p-opacity, 0.25); }
-}
-
-@keyframes jk-sweep {
-  0%, 100% { transform: translateY(-120px) scaleX(0.6); opacity: 0.03; }
-  50% { transform: translateY(120px) scaleX(1); opacity: 0.08; }
-}
-
-.jk-orb {
+.jk-glow {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(circle, var(--jk-gold) 0%, var(--jk-gold-dark) 40%, transparent 70%);
-  filter: blur(50px);
-  will-change: transform;
+  /* Large soft gradient = visually blurred without filter:blur */
+  background: radial-gradient(circle, var(--jk-gold) 0%, var(--jk-gold-dark) 15%, transparent 55%);
 }
 
-.jk-orb-1 {
-  width: 380px; height: 380px; left: 8%; top: 12%;
-  animation: jk-float-1 20s ease-in-out infinite;
-}
-.jk-orb-2 {
-  width: 300px; height: 300px; right: 10%; top: 55%;
-  animation: jk-float-2 24s ease-in-out infinite;
-}
-.jk-orb-3 {
-  width: 250px; height: 250px; left: 45%; bottom: 10%;
-  animation: jk-float-3 18s ease-in-out infinite;
-}
-.jk-orb-4 {
-  width: 200px; height: 200px; right: 25%; top: 8%;
-  animation: jk-float-4 22s ease-in-out infinite;
+.jk-glow-1 {
+  width: 500px; height: 500px; left: 5%; top: 10%;
+  animation: jk-glow-drift-1 25s ease-in-out infinite;
 }
 
-.jk-particle {
+.jk-glow-2 {
+  width: 400px; height: 400px; right: 8%; top: 50%;
+  animation: jk-glow-drift-2 30s ease-in-out infinite;
+}
+
+.jk-glow-3 {
+  width: 350px; height: 350px; left: 40%; bottom: 5%;
+  animation: jk-glow-drift-3 22s ease-in-out infinite;
+}
+
+/* Floating gold dots */
+@keyframes jk-dot-float {
+  0%, 100% { transform: translateY(0); opacity: inherit; }
+  50% { transform: translateY(-20px); opacity: calc(inherit * 0.5); }
+}
+
+.jk-dot {
   position: absolute;
   border-radius: 50%;
   background: var(--jk-gold);
-  will-change: transform;
-  animation: jk-drift 12s ease-in-out infinite;
+  animation: jk-dot-float ease-in-out infinite;
+}
+
+/* Horizontal sweep beams */
+@keyframes jk-sweep {
+  0%, 100% { transform: translateX(-100%); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateX(100vw); opacity: 0; }
 }
 
 .jk-beam {
   position: absolute;
   left: 0;
-  right: 0;
+  width: 30%;
   height: 1px;
   background: linear-gradient(90deg, transparent 0%, var(--jk-gold) 50%, transparent 100%);
-  will-change: transform;
 }
 
 .jk-beam-1 {
-  top: 35%;
-  animation: jk-sweep 28s ease-in-out infinite;
+  top: 30%;
+  animation: jk-sweep 20s ease-in-out infinite;
 }
+
 .jk-beam-2 {
-  top: 70%;
-  animation: jk-sweep 32s ease-in-out 8s infinite;
+  top: 65%;
+  animation: jk-sweep 26s ease-in-out 6s infinite;
+}
+
+/* Diagonal shimmer — a slow-moving angled line */
+@keyframes jk-shimmer-move {
+  0% { transform: translateX(-100%) rotate(25deg); }
+  100% { transform: translateX(200%) rotate(25deg); }
+}
+
+.jk-shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 150px;
+  height: 200%;
+  background: linear-gradient(90deg, transparent 0%, var(--jk-gold-light) 50%, transparent 100%);
+  animation: jk-shimmer-move 15s ease-in-out infinite;
 }
 
 /* ─── Scrollbar styling ─── */

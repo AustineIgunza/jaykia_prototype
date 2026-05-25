@@ -42,18 +42,14 @@ export default function AdminDriversPage() {
       setAllUsers(users);
       setRoles(rolesData);
 
-      // Find users with driver role
-      const driverInfos: DriverInfo[] = [];
-      for (const user of users) {
-        try {
-          const ur = await api.getUserRoles(user.id);
-          if (ur.roles.includes("driver")) {
-            driverInfos.push({ user, roles: ur.roles });
-          }
-        } catch {
-          // skip users where roles can't be fetched
-        }
-      }
+      // Find users with driver role — fetch all in parallel
+      const roleResults = await Promise.allSettled(
+        users.map((user) => api.getUserRoles(user.id).then((ur) => ({ user, roles: ur.roles })))
+      );
+      const driverInfos: DriverInfo[] = roleResults
+        .filter((r): r is PromiseFulfilledResult<DriverInfo> => r.status === "fulfilled")
+        .map((r) => r.value)
+        .filter((info) => info.roles.includes("driver"));
       setDrivers(driverInfos);
     } finally {
       setLoading(false);

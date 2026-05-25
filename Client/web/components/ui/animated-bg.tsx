@@ -1,86 +1,57 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { memo } from "react";
 
 interface AnimatedBgProps {
   variant?: "public" | "admin";
 }
 
-export function AnimatedBg({ variant = "public" }: AnimatedBgProps) {
-  const glowRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const glow = glowRef.current;
-    if (!glow) return;
-
-    function onMove(e: MouseEvent) {
-      glow!.style.left = `${e.clientX}px`;
-      glow!.style.top = `${e.clientY}px`;
-    }
-
-    window.addEventListener("mousemove", onMove, { passive: true });
-    return () => window.removeEventListener("mousemove", onMove);
-  }, []);
-
+export const AnimatedBg = memo(function AnimatedBg({ variant = "public" }: AnimatedBgProps) {
   const isAdmin = variant === "admin";
-  const orbOpacity = isAdmin ? 0.06 : 0.1;
-  const particleOpacity = isAdmin ? 0.15 : 0.25;
+  const baseOpacity = isAdmin ? 0.5 : 1;
 
   return (
     <div
       className="pointer-events-none fixed inset-0 -z-10 overflow-hidden motion-reduce:hidden"
       aria-hidden="true"
     >
-      {/* Mouse-reactive glow */}
-      <div
-        ref={glowRef}
-        className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{
-          width: 500,
-          height: 500,
-          background: "radial-gradient(circle, var(--jk-gold) 0%, transparent 70%)",
-          opacity: 0.06,
-          filter: "blur(80px)",
-          transition: "left 0.4s ease-out, top 0.4s ease-out",
-          willChange: "left, top",
-        }}
-      />
+      {/* Soft gradient orbs — no blur filter, uses pre-blurred radial gradients */}
+      <div className="jk-glow jk-glow-1" style={{ opacity: 0.08 * baseOpacity }} />
+      <div className="jk-glow jk-glow-2" style={{ opacity: 0.06 * baseOpacity }} />
+      <div className="jk-glow jk-glow-3" style={{ opacity: 0.05 * baseOpacity }} />
 
-      {/* Orbs — CSS animated */}
-      <div className="jk-orb jk-orb-1" style={{ opacity: orbOpacity }} />
-      <div className="jk-orb jk-orb-2" style={{ opacity: orbOpacity }} />
-      <div className="jk-orb jk-orb-3" style={{ opacity: orbOpacity }} />
-      <div className="jk-orb jk-orb-4" style={{ opacity: orbOpacity }} />
-
-      {/* Particles — CSS animated */}
-      {Array.from({ length: 15 }, (_, i) => (
+      {/* Floating gold dots */}
+      {Array.from({ length: 6 }, (_, i) => (
         <div
           key={i}
-          className="jk-particle"
+          className="jk-dot"
           style={{
-            left: `${(i * 6.7) % 100}%`,
-            top: `${(i * 13.3) % 100}%`,
-            width: 2 + (i % 3) * 1.5,
-            height: 2 + (i % 3) * 1.5,
-            opacity: particleOpacity,
-            animationDuration: `${10 + (i % 5) * 4}s`,
-            animationDelay: `${i * 0.6}s`,
+            left: `${10 + i * 16}%`,
+            top: `${15 + (i * 37) % 70}%`,
+            width: 3 + (i % 3),
+            height: 3 + (i % 3),
+            opacity: (0.15 + (i % 3) * 0.1) * baseOpacity,
+            animationDuration: `${18 + i * 4}s`,
+            animationDelay: `${i * 2}s`,
           }}
         />
       ))}
 
-      {/* Sweeping beams */}
-      <div className="jk-beam jk-beam-1" />
-      <div className="jk-beam jk-beam-2" />
+      {/* Sweeping horizontal light beams */}
+      <div className="jk-beam jk-beam-1" style={{ opacity: 0.04 * baseOpacity }} />
+      <div className="jk-beam jk-beam-2" style={{ opacity: 0.03 * baseOpacity }} />
 
-      {/* Vignette */}
+      {/* Subtle diagonal shimmer line */}
+      <div className="jk-shimmer" style={{ opacity: 0.06 * baseOpacity }} />
+
+      {/* Vignette overlay */}
       <div
         className="absolute inset-0"
         style={{
-          background: "radial-gradient(ellipse at center, transparent 40%, var(--jk-charcoal) 100%)",
-          opacity: 0.5,
+          background: "radial-gradient(ellipse at center, transparent 30%, var(--jk-charcoal) 100%)",
+          opacity: 0.6,
         }}
       />
     </div>
   );
-}
+});
