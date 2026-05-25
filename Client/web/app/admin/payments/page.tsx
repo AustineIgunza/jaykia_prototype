@@ -72,7 +72,7 @@ export default function AdminPaymentsPage() {
 
   useEffect(() => {
     if (!api) return;
-    api.getPayments().then(setPayments).finally(() => setLoading(false));
+    api.getAllPayments().then(setPayments).finally(() => setLoading(false));
   }, [api]);
 
   function toggleMethod(id: string) {
@@ -93,7 +93,23 @@ export default function AdminPaymentsPage() {
     setEditingMethod(null);
   }
 
-  const total = payments.reduce((sum, p) => sum + p.amount, 0);
+  async function handleDelete(paymentId: string) {
+    if (!api) return;
+    await api.deletePayment(paymentId);
+    setPayments((prev) => prev.filter((p) => p.id !== paymentId));
+  }
+
+  const statusVariant = (s: string) => {
+    switch (s) {
+      case "paid": return "success" as const;
+      case "pending": return "pending" as const;
+      case "failed": return "error" as const;
+      case "cancelled": return "warning" as const;
+      default: return "info" as const;
+    }
+  };
+
+  const total = payments.filter((p) => p.payment_status === "paid").reduce((sum, p) => sum + p.amount, 0);
 
   return (
     <FadeIn>
@@ -163,14 +179,16 @@ export default function AdminPaymentsPage() {
                 <TableHead>Booking</TableHead>
                 <TableHead>Amount (KES)</TableHead>
                 <TableHead>Method</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Reference</TableHead>
-                <TableHead>Paid At</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {payments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted py-8">
+                  <TableCell colSpan={8} className="text-center text-muted py-8">
                     No payments found.
                   </TableCell>
                 </TableRow>
@@ -178,16 +196,24 @@ export default function AdminPaymentsPage() {
                 payments.map((p) => (
                   <TableRow key={p.id}>
                     <TableCell className="font-mono text-xs">{p.id}</TableCell>
-                    <TableCell className="font-mono text-xs">{p.booking_id || "\u2014"}</TableCell>
+                    <TableCell className="font-mono text-xs">{p.booking_id}</TableCell>
                     <TableCell className="font-semibold text-accent">
                       {p.amount.toLocaleString()}
                     </TableCell>
                     <TableCell>
                       <StatusBadge variant="info">{p.payment_method}</StatusBadge>
                     </TableCell>
+                    <TableCell>
+                      <StatusBadge variant={statusVariant(p.payment_status)}>{p.payment_status}</StatusBadge>
+                    </TableCell>
                     <TableCell className="font-mono text-xs">{p.transaction_reference || "\u2014"}</TableCell>
                     <TableCell className="text-xs">
-                      {p.paid_at ? new Date(p.paid_at).toLocaleString() : "\u2014"}
+                      {new Date(p.created_at).toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="danger" size="sm" onClick={() => handleDelete(p.id)}>
+                        Delete
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))

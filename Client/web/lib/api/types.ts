@@ -193,29 +193,48 @@ export interface UpdateBookingDTO {
 }
 
 // ─── Payments ───
-// TODO: verify against backend — controllers are empty
 
-export type PayMethod = "bank" | "mpesa" | "card";
-// Note: SQL only has 'bank' | 'mpesa'. "card" added for business requirements.
-// TODO: confirm with backend
+export type PaymentMethod = "m-pesa" | "bank";
+export type PaymentStatus = "paid" | "pending" | "cancelled" | "failed";
 
 export interface Payment {
   id: string;
   user_id: string;
-  booking_id?: string; // TODO: verify — not in SQL but logically needed
+  booking_id: string;
   amount: number;
-  payment_method: PayMethod;
-  phone_number: string | null;
+  payment_method: PaymentMethod;
+  payment_status: PaymentStatus;
   transaction_reference: string | null;
+  phone_number: string | null;
   paid_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CreatePaymentDTO {
-  booking_id?: string; // TODO: verify against backend
+  booking_id: string;
   amount: number;
-  payment_method: PayMethod;
+  payment_method: PaymentMethod;
   phone_number?: string;
-  transaction_reference?: string;
+}
+
+export interface StripeInitiateDTO {
+  booking_id: string;
+  amount: number;
+  payment_method_id: string;
+  email?: string;
+}
+
+export interface StripeInitiateResponse {
+  message: string;
+  paymentId: string;
+  clientSecret?: string;
+  stripeStatus: string;
+}
+
+export interface InitiatePaymentResponse {
+  message: string;
+  paymentId: string;
 }
 
 // ─── Ratings ───

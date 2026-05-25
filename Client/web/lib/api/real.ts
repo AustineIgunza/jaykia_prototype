@@ -21,7 +21,9 @@ import type {
   CreateBookingDTO,
   UpdateBookingDTO,
   Payment,
-  CreatePaymentDTO,
+  StripeInitiateDTO,
+  StripeInitiateResponse,
+  InitiatePaymentResponse,
   Rating,
   CreateRatingDTO,
   Refund,
@@ -205,16 +207,26 @@ export const realClient: ApiClient = {
     }),
 
   // Payments
-  // TODO: verify against backend — controllers are empty
   getPayments: () => request<Payment[]>("/payments"),
+
+  getAllPayments: () => request<Payment[]>("/payments/all"),
 
   getPayment: (paymentId: string) => request<Payment>(`/payments/${paymentId}`),
 
-  createPayment: (data: CreatePaymentDTO) =>
-    request<Payment>("/payments", {
+  initiateMpesa: (bookingId: string, amount: number, phoneNumber: string) =>
+    request<InitiatePaymentResponse>("/payments/mpesa/initiate", {
+      method: "POST",
+      body: JSON.stringify({ booking_id: bookingId, amount, phone_number: phoneNumber }),
+    }),
+
+  initiateStripe: (data: StripeInitiateDTO) =>
+    request<StripeInitiateResponse>("/payments/stripe/initiate", {
       method: "POST",
       body: JSON.stringify(data),
     }),
+
+  deletePayment: (paymentId: string) =>
+    request<void>(`/payments/${paymentId}`, { method: "DELETE" }),
 
   // Ratings
   // TODO: verify against backend — controllers are empty

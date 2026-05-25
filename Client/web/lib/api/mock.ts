@@ -22,7 +22,9 @@ import type {
   CreateBookingDTO,
   UpdateBookingDTO,
   Payment,
-  CreatePaymentDTO,
+  StripeInitiateDTO,
+  StripeInitiateResponse,
+  InitiatePaymentResponse,
   Rating,
   CreateRatingDTO,
   Refund,
@@ -326,6 +328,11 @@ export const mockClient: ApiClient = {
   // Payments
   async getPayments(): Promise<Payment[]> {
     await delay();
+    return payments.filter((p) => p.user_id === currentUserId);
+  },
+
+  async getAllPayments(): Promise<Payment[]> {
+    await delay();
     return payments;
   },
 
@@ -336,18 +343,52 @@ export const mockClient: ApiClient = {
     return payment;
   },
 
-  async createPayment(data: CreatePaymentDTO): Promise<Payment> {
+  async initiateMpesa(bookingId: string, amount: number, phoneNumber: string): Promise<InitiatePaymentResponse> {
     await delay();
+    const id = `p-${uid()}`;
+    const now = new Date().toISOString();
     const payment: Payment = {
-      id: `p-${uid()}`,
+      id,
       user_id: currentUserId,
-      ...data,
-      phone_number: data.phone_number ?? null,
-      transaction_reference: data.transaction_reference ?? `TXN_${uid()}`,
-      paid_at: new Date().toISOString(),
+      booking_id: bookingId,
+      amount,
+      payment_method: "m-pesa",
+      payment_status: "pending",
+      phone_number: phoneNumber,
+      transaction_reference: `MRQ_${uid()}`,
+      paid_at: null,
+      created_at: now,
+      updated_at: now,
     };
     payments.push(payment);
-    return payment;
+    return { message: "STK push sent", paymentId: id };
+  },
+
+  async initiateStripe(data: StripeInitiateDTO): Promise<StripeInitiateResponse> {
+    await delay();
+    const id = `p-${uid()}`;
+    const now = new Date().toISOString();
+    const payment: Payment = {
+      id,
+      user_id: currentUserId,
+      booking_id: data.booking_id,
+      amount: data.amount,
+      payment_method: "bank",
+      payment_status: "paid",
+      phone_number: null,
+      transaction_reference: `pi_${uid()}`,
+      paid_at: now,
+      created_at: now,
+      updated_at: now,
+    };
+    payments.push(payment);
+    return { message: "Payment succeeded", paymentId: id, stripeStatus: "succeeded" };
+  },
+
+  async deletePayment(paymentId: string): Promise<void> {
+    await delay();
+    const idx = payments.findIndex((p) => p.id === paymentId);
+    if (idx !== -1) payments.splice(idx, 1);
   },
 
   // Ratings
