@@ -51,7 +51,7 @@ export class PaymentRepo implements PaymentRepository {
 
     const query = `
       UPDATE payments
-      SET ${sets}, updated_at = NOW()
+      SET ${sets}
       WHERE id = $1
       RETURNING *
     `;

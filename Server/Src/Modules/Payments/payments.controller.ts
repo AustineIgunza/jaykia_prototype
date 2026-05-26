@@ -182,7 +182,7 @@ export const PaymentController = async (
   } catch (error) {
     const err = error as Error;
     ErrorMsg(err);
-
+    console.log(err);
     if (err.message === "Forbidden")
       return sendErrorMessage(403, "Forbidden", response);
     if (err.message.includes("not found"))

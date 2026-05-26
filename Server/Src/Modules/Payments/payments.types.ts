@@ -1,6 +1,6 @@
 // ─── Core Payment Entity ──────────────────────────────────────────────────────
 
-export type PaymentMethod = "m-pesa" | "bank";
+export type PaymentMethod = "mpesa" | "bank";
 export type PaymentStatus = "paid" | "pending" | "cancelled" | "failed";
 
 export type Payment = {

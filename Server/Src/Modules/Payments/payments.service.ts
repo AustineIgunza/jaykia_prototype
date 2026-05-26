@@ -29,7 +29,7 @@ export class PaymentServ {
       user_id: userId,
       booking_id: bookingId,
       amount,
-      payment_method: "m-pesa",
+      payment_method: "mpesa",
       phone_number: phone,
     });
 

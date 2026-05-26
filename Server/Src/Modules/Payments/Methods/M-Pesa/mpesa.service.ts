@@ -44,7 +44,7 @@ export class MpesaInternalService {
 
     return this.httpsGet<{ access_token: string }>(
       `${this.baseUrl}/oauth/v1/generate?grant_type=client_credentials`,
-      { Authorization: `Basic ${auth}` },
+      { Authorization: `Basic ${auth}`, Accept: "application/json" },
     ).then((data) => {
       if (!data.access_token) throw new Error("Failed to obtain M-Pesa token");
       return data.access_token;
@@ -112,18 +112,58 @@ export class MpesaInternalService {
     headers: Record<string, string>,
   ): Promise<T> {
     return new Promise((resolve, reject) => {
-      const req = https.request(url, { method: "GET", headers }, (res) => {
-        let data = "";
-        res.on("data", (chunk) => (data += chunk));
-        res.on("end", () => {
-          try {
-            resolve(JSON.parse(data));
-          } catch {
-            reject(new Error(`Failed to parse response: ${data}`));
-          }
-        });
+      const req = https.request(
+        url,
+        {
+          method: "GET",
+          headers,
+        },
+        (res) => {
+          let data = "";
+
+          res.on("data", (chunk: Buffer) => {
+            data += chunk.toString();
+          });
+
+          res.on("end", () => {
+            console.log("STATUS:", res.statusCode);
+            console.log("HEADERS:", res.headers);
+            console.log("RAW RESPONSE:", data);
+
+            // Handle empty responses
+            if (!data.trim()) {
+              return reject(new Error("Empty response received from server"));
+            }
+
+            try {
+              const parsed = JSON.parse(data);
+
+              // Handle HTTP errors
+              if (res.statusCode && res.statusCode >= 400) {
+                return reject(
+                  new Error(
+                    parsed.errorMessage ||
+                      parsed.message ||
+                      `HTTP Error ${res.statusCode}`,
+                  ),
+                );
+              }
+
+              resolve(parsed);
+            } catch (error) {
+              console.error("JSON Parse Error:", error);
+
+              reject(new Error(`Failed to parse JSON response: ${data}`));
+            }
+          });
+        },
+      );
+
+      req.on("error", (error) => {
+        console.error("HTTPS Request Error:", error);
+        reject(error);
       });
-      req.on("error", reject);
+
       req.end();
     });
   }
@@ -134,6 +174,7 @@ export class MpesaInternalService {
     extraHeaders: Record<string, string> = {},
   ): Promise<T> {
     const serialised = JSON.stringify(body);
+
     return new Promise((resolve, reject) => {
       const req = https.request(
         url,
@@ -147,17 +188,46 @@ export class MpesaInternalService {
         },
         (res) => {
           let data = "";
-          res.on("data", (chunk) => (data += chunk));
+
+          res.on("data", (chunk) => {
+            data += chunk.toString();
+          });
+
           res.on("end", () => {
+            console.log("STATUS:", res.statusCode);
+            console.log("RAW RESPONSE:", data);
+
+            // Empty response protection
+            if (!data.trim()) {
+              return reject(new Error("Empty response from server"));
+            }
+
             try {
-              resolve(JSON.parse(data));
-            } catch {
-              reject(new Error(`Failed to parse response: ${data}`));
+              const parsed = JSON.parse(data);
+
+              // HTTP failure protection
+              if (res.statusCode && res.statusCode >= 400) {
+                return reject(
+                  new Error(
+                    parsed.errorMessage ||
+                      parsed.message ||
+                      `HTTP Error ${res.statusCode}`,
+                  ),
+                );
+              }
+
+              resolve(parsed);
+            } catch (error) {
+              reject(new Error(`Failed to parse JSON response: ${data}`));
             }
           });
         },
       );
-      req.on("error", reject);
+
+      req.on("error", (err) => {
+        reject(err);
+      });
+
       req.write(serialised);
       req.end();
     });

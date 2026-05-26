@@ -1,4 +1,5 @@
 CREATE TYPE pay_method AS ENUM('bank','mpesa');
+CREATE TYPE payment_status AS ENUM('pending','paid','failed');
 
 CREATE TABLE payments(
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
@@ -6,6 +7,7 @@ CREATE TABLE payments(
     booking_id UUID REFERENCES booking(id) ON DELETE CASCADE NOT NULL,
     amount INT,
     payment_method pay_method NOT NULL,
+    payment_status payment_status DEFAULT 'pending',
     phone_number TEXT,
     transaction_reference TEXT,
     paid_at TIMESTAMP,
