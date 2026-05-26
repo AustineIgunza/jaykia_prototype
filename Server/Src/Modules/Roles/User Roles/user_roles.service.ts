@@ -1,9 +1,10 @@
-import { ErrorMsg } from "../../../../Utilities/Logger.js";
+import { ErrorMsg, Warning } from "../../../../Utilities/Logger.js";
 import type { UserRoleRepo } from "./user_roles.repository.js";
 import type {
   UserRole,
   UserRoleService,
   UserSpecificRoles,
+  UserSpecificRolesWithPermissions,
 } from "./user_roles.types.js";
 
 export class UserRolesServ implements UserRoleService {
@@ -11,6 +12,7 @@ export class UserRolesServ implements UserRoleService {
 
   async createUserRole(userId: string, roleId: string): Promise<UserRole> {
     try {
+      console.log(userId + " : " + roleId);
       if (!userId || !roleId)
         throw new Error("Incomplete credentials provided");
 
@@ -31,7 +33,23 @@ export class UserRolesServ implements UserRoleService {
 
       return retrievalUserRole;
     } catch (error) {
-      ErrorMsg(error as Error);
+      Warning(`Error at getting user roles`);
+      throw error;
+    }
+  }
+
+  async getUserRolesWithPermissions(
+    userId: string,
+  ): Promise<UserSpecificRolesWithPermissions> {
+    try {
+      if (!userId) throw new Error("User id must be provided");
+
+      const retrieveUserRolesPermissions =
+        await this.repo.getUserRolesWithPermissions(userId);
+
+      return retrieveUserRolesPermissions;
+    } catch (error) {
+      Warning("Error at getting user roles and permissions");
       throw error;
     }
   }

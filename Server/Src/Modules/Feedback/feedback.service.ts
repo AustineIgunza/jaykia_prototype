@@ -29,8 +29,6 @@ export class FeedbackServ implements FeedbackService {
         filteredBookingDetails[key] = value;
       }
 
-      filteredBookingDetails["user_id"] = userId;
-
       const createFeedbackQuery = await this.feedbackRepo.createFeedback(
         userId,
         filteredBookingDetails as createFeedbackDTO,
@@ -65,10 +63,8 @@ export class FeedbackServ implements FeedbackService {
         newFilteredBookingDetails[key] = value;
       }
 
-      newFilteredBookingDetails["user_id"] = userId;
-
       const editFeedbackQuery = await this.feedbackRepo.editFeedback(
-        newFeedbackDetails,
+        newFilteredBookingDetails as updateFeedbackDTO,
         feedbackId,
         userId,
       );
@@ -79,9 +75,10 @@ export class FeedbackServ implements FeedbackService {
       throw error;
     }
   }
+
   async getAllFeedback(): Promise<Feedback[]> {
     try {
-      return await this.getAllFeedback();
+      return await this.feedbackRepo.getAllFeedback();
     } catch (error) {
       Warning(`Error at retrieving all feedback`);
       throw error;
@@ -100,6 +97,7 @@ export class FeedbackServ implements FeedbackService {
       throw error;
     }
   }
+
   async getFeedback(feedbackId: string): Promise<Feedback> {
     try {
       if (!feedbackId) throw new Error("Feedback id should be provided");
@@ -112,9 +110,11 @@ export class FeedbackServ implements FeedbackService {
       throw error;
     }
   }
+
   async deleteFeedback(feedbackId: string, userId: string): Promise<void> {
     try {
-      if (userId) throw new Error("User id not provided");
+      if (!feedbackId || !userId)
+        throw new Error("Feedback and User id must provided");
 
       await this.feedbackRepo.deleteFeedback(feedbackId, userId);
     } catch (error) {

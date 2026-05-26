@@ -1,5 +1,4 @@
 import type { IncomingMessage, ServerResponse } from "http";
-import type { AuthInfo } from "../Src/Middleware/AuthChecker.js";
 import type {
   AuthRefreshToken,
   AuthResponse,
@@ -34,7 +33,6 @@ export function sendErrorMessage(
     });
   response.end(JSON.stringify(responseMsg));
 }
-
 export function sendResponseMessage(
   statusCode: number,
   message: any,
@@ -68,9 +66,13 @@ export function sendAuthMessage(
   }
 }
 
-export const getRequestBody = async (request: IncomingMessage) => {
+export const getRequestBody = async <T = Record<string, any>>(
+  request: IncomingMessage,
+): Promise<T> => {
   return new Promise((resolve, reject) => {
     let unparsedReqBody: string = "";
+
+    request.on("error", (error) => reject(error));
 
     request.on("data", (data: Buffer) => {
       unparsedReqBody += data.toString();
@@ -82,7 +84,7 @@ export const getRequestBody = async (request: IncomingMessage) => {
     request.on("end", () => {
       try {
         if (!unparsedReqBody || unparsedReqBody.length <= 0) {
-          resolve({});
+          resolve({} as T);
           return;
         }
 
@@ -91,9 +93,5 @@ export const getRequestBody = async (request: IncomingMessage) => {
         reject(new Error("Invalid JSON format"));
       }
     });
-
-    request.on("error", (error) => reject(error));
-
-    resolve(JSON.parse(unparsedReqBody));
   });
 };

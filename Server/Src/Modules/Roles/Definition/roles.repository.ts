@@ -5,6 +5,7 @@ import type {
   createRoleDTO,
   Role,
   RoleRepository,
+  RoleWithPermissions,
   updateRoleDTO,
 } from "./roles.types.js";
 
@@ -14,7 +15,7 @@ export class RoleRepo implements RoleRepository {
   async createRole(details: createRoleDTO): Promise<Role> {
     try {
       const roleCreationQuery: QueryResult<Role> = await this.db.query(
-          "INSERT INTO roles(role_name,role_description) VALUES($1,$2)",
+          "INSERT INTO roles(role_name,role_description) VALUES($1,$2) RETURNING *",
           [details.name, details.description],
         ),
         createdRole = roleCreationQuery.rows;
@@ -25,6 +26,7 @@ export class RoleRepo implements RoleRepository {
       throw error;
     }
   }
+
   async editRole(roleId: string, newDetails: updateRoleDTO): Promise<Role> {
     try {
       let keys: string[] = [],
@@ -32,7 +34,7 @@ export class RoleRepo implements RoleRepository {
         paramIndex: number = 2;
 
       for (let [key, value] of Object.entries(newDetails)) {
-        keys.push(`${key}=${paramIndex++}`);
+        keys.push(`${key}=$${paramIndex++}`);
         values.push(value);
       }
 
@@ -57,6 +59,39 @@ export class RoleRepo implements RoleRepository {
       );
 
       return getQuery.rows;
+    } catch (error) {
+      ErrorMsg(error as Error);
+      throw error;
+    }
+  }
+
+  async getRoleWithPermissions(roleId: string): Promise<RoleWithPermissions> {
+    try {
+      const sqlQuery = `
+      SELECT
+        r.id               AS "roleId",
+        r.role_name        AS "roleName",
+        r.role_description AS "roleDescription",
+        COALESCE(
+          JSON_AGG(
+            JSON_BUILD_OBJECT(
+              'permissionId', p.id,
+              'name',         p.name,
+              'description',  p.description,
+              'created_at',   p.created_at
+            ) ORDER BY p.name
+          ) FILTER (WHERE p.id IS NOT NULL),
+          '[]'
+        ) AS permissions
+      FROM roles r
+      LEFT JOIN role_permissions rp ON rp.role_id = r.id
+      LEFT JOIN permissions      p  ON p.id = rp.permission_id
+      WHERE r.id = $1
+      GROUP BY r.id, r.role_name, r.role_description
+    `;
+
+      const result = await this.db.query(sqlQuery, [roleId]);
+      return result.rows[0];
     } catch (error) {
       ErrorMsg(error as Error);
       throw error;

@@ -3,25 +3,20 @@ import { Socket, Server as SocketServer } from "socket.io";
 import { ErrorMsg, Info, Warning } from "../../../Utilities/Logger.js";
 import { decode_access_token } from "../../../Utilities/jwt.js";
 import type { PublicUserDTO } from "../Users/user.types.js";
-import { RoleRepo } from "../Roles/Definition/roles.repository.js";
+import { type AuthenticatedSocket } from "./socket.types.js";
+import { type SocketIOService } from "./socket.types.js";
 import type { Database } from "../../Config/DB.js";
-import { Roleservice } from "../Roles/Definition/roles.service.js";
+
 import { UserRoleRepo } from "../Roles/User Roles/user_roles.repository.js";
 import { UserRolesServ } from "../Roles/User Roles/user_roles.service.js";
-import type { createBookingDTO } from "../Bookings/booking.types.js";
-
-type AuthenticatedSocket = Socket & {
-  data: {
-    user: PublicUserDTO;
-  };
-};
+import type { Booking, createBookingDTO } from "../Bookings/booking.types.js";
 
 const Rooms = {
   user: (userId: string) => `user:${userId}`,
   admins: "admins",
 } as const;
 
-export class SocketIO {
+export class SocketIO implements SocketIOService {
   public ioSocket: SocketServer;
 
   constructor(
@@ -123,6 +118,12 @@ export class SocketIO {
           });
         },
       );
+
+      socket.on("booking:deletion", (bookingDetails: Booking) => {
+        Info(`Booking of id: ${bookingDetails.id} deleted successfully`);
+
+        this.ioSocket.to(Rooms.admins).emit("booking:deleted", bookingDetails);
+      });
 
       socket.on("disconnect", (reason) => {
         Info(`Disconnected: ${username} (${id}) — reason: ${reason}`);

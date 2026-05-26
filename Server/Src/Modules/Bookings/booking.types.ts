@@ -13,6 +13,7 @@ export type Booking = {
   cancelled: boolean;
   cancelled_at: string;
   reason: string;
+  payment_amount: number;
 };
 
 export type createBookingDTO = Omit<
@@ -28,14 +29,22 @@ export type createBookingDTO = Omit<
   > &
   Partial<Booking>;
 
-export type updateBookingDTO = Pick<Booking, "id" | "user_id"> &
+export type updateBookingDTO = Omit<Booking, "id" | "user_id"> &
   Partial<Booking>;
 
 export interface BookingRepository {
-  createBooking: (bookingDetails: createBookingDTO) => Promise<Booking>;
-  editBooking: (newBookingDetails: updateBookingDTO) => Promise<Booking>;
+  createBooking: (
+    userId: string,
+    bookingDetails: createBookingDTO,
+  ) => Promise<Booking>;
+  editBooking: (
+    userId: string,
+    bookingId: string,
+    newBookingDetails: updateBookingDTO,
+  ) => Promise<Booking>;
   getBooking: (userId: string, bookingId: string) => Promise<Booking>;
   getUserBookings: (userId: string) => Promise<Booking[]>;
+  getAllBookings: () => Promise<Booking[]>;
   deleteBooking: (bookingId: string, userId: string) => Promise<void>;
 }
 export interface BookingService {
@@ -45,6 +54,7 @@ export interface BookingService {
   ) => Promise<Booking>;
   editBooking: (
     userId: string,
+    bookingId: string,
     newBookingDetails: updateBookingDTO,
   ) => Promise<Booking>;
   getBooking: (userId: string, bookingId: string) => Promise<Booking>;

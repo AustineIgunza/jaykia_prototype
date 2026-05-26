@@ -2,15 +2,17 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { routes } from "./Routes.js";
 import { Database } from "./Src/Config/DB.js";
 import { ErrorMsg } from "./Utilities/Logger.js";
+import type { SocketIOService } from "./Src/Modules/Socket/socket.types.js";
 
 const Router = (
   db: Database,
   request: IncomingMessage,
   response: ServerResponse<IncomingMessage>,
+  ioSocket: SocketIOService,
 ) => {
   const requestUrl: URL = new URL(
-      `http://${request.headers.host}`,
       request.url!,
+      `http://${request.headers.host}`,
     ),
     pathnames: string[] = requestUrl.pathname.split("/").filter(Boolean);
 
@@ -21,7 +23,7 @@ const Router = (
   response.setHeader("Access-Control-Allow-Origins", "*");
   response.setHeader(
     "Access-Control-Allow-Headers",
-    "accept,content-type,content-length",
+    "accept,content-type,content-length,authorization",
   );
 
   if (request.method == "OPTIONS") {
@@ -57,7 +59,7 @@ const Router = (
     return;
   }
 
-  matchedRoute.controller(db, request, response);
+  matchedRoute.controller(db, request, response, ioSocket);
 };
 
 export default Router;

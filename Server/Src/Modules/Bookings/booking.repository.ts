@@ -11,17 +11,19 @@ import type {
 export class BookingRepo implements BookingRepository {
   constructor(private db: Database) {}
 
-  async createBooking(bookingDetails: createBookingDTO): Promise<Booking> {
+  async createBooking(
+    userId: string,
+    bookingDetails: createBookingDTO,
+  ): Promise<Booking> {
     try {
       let sqlQuery: string;
-
+      console.log(bookingDetails);
       if (bookingDetails.mode_of_transport == "flight")
-        sqlQuery = `INSERT INTO booking(user_id,pickup_location,drop_off_location,no_of_passengers,no_of_luggage_items,mode_of_transport,flight_number,departure_time,arrival_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`;
+        sqlQuery = `INSERT INTO booking(user_id,pickup_location,dropoff_location,no_of_passengers,no_of_luggage_items,mode_of_transport,flight_number,departure_time,arrival_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`;
       else
-        sqlQuery = `INSERT INTO booking(user_id,pickup_location,drop_off_location,no_of_passengers,no_of_luggage_items,mode_of_transport,departure_time,arrival_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`;
+        sqlQuery = `INSERT INTO booking(user_id,pickup_location,dropoff_location,no_of_passengers,no_of_luggage_items,mode_of_transport,departure_time,arrival_time) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`;
 
       const {
-        user_id,
         pickup_location,
         dropoff_location,
         no_of_passengers,
@@ -36,7 +38,7 @@ export class BookingRepo implements BookingRepository {
           sqlQuery,
           bookingDetails.mode_of_transport == "flight"
             ? [
-                user_id,
+                userId,
                 pickup_location,
                 dropoff_location,
                 no_of_passengers,
@@ -47,7 +49,7 @@ export class BookingRepo implements BookingRepository {
                 arrival_time,
               ]
             : [
-                user_id,
+                userId,
                 pickup_location,
                 dropoff_location,
                 no_of_passengers,
@@ -66,8 +68,13 @@ export class BookingRepo implements BookingRepository {
     }
   }
 
-  async editBooking(newBookingDetails: updateBookingDTO): Promise<Booking> {
+  async editBooking(
+    userId: string,
+    bookingId: string,
+    newBookingDetails: updateBookingDTO,
+  ): Promise<Booking> {
     try {
+      console.log(newBookingDetails);
       let keys: string[] = [],
         values: any[] = [],
         paramIndex: number = 3;
@@ -82,10 +89,11 @@ export class BookingRepo implements BookingRepository {
         values.push(value);
       }
 
-      const sqlQuery = `UPDATE booking SET ${keys.join(",")} WHERE id=$1 AND user_id=$2`,
-        updateQuery = await this.db.query(sqlQuery, [
-          newBookingDetails.id,
-          newBookingDetails.user_id,
+      const sqlQuery = `UPDATE booking SET ${keys.join(",")} WHERE id=$1 AND user_id=$2 RETURNING *`;
+
+      const updateQuery = await this.db.query(sqlQuery, [
+          bookingId,
+          userId,
           ...values,
         ]),
         updateResult = updateQuery.rows[0];
@@ -112,9 +120,22 @@ export class BookingRepo implements BookingRepository {
 
   async getUserBookings(userId: string): Promise<Booking[]> {
     try {
-      const sqlQuery = `SELECT * FROM booking WHERE user_id=$2`,
+      const sqlQuery = `SELECT * FROM booking WHERE user_id=$1`,
         retrievalQuery = await this.db.query(sqlQuery, [userId]),
-        retrievalResult = retrievalQuery.rows[0];
+        retrievalResult = retrievalQuery.rows;
+
+      return retrievalResult;
+    } catch (error) {
+      ErrorMsg(error as Error);
+      throw error;
+    }
+  }
+
+  async getAllBookings(): Promise<Booking[]> {
+    try {
+      const sqlQuery = `SELECT * FROM booking`,
+        retrievalQuery = await this.db.query(sqlQuery),
+        retrievalResult = retrievalQuery.rows;
 
       return retrievalResult;
     } catch (error) {

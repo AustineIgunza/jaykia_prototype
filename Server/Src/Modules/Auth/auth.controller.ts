@@ -39,14 +39,13 @@ export const AuthController = async (
   try {
     switch (pathNames[2]) {
       case "register":
-        if (request.method != "POST") {
-          sendErrorMessage(405, "Use POST instead", response);
-          break;
-        }
-
-        const registrationDetails: any = getRequestBody(request);
-
+        const registrationDetails: any = await getRequestBody(request);
+        console.log(registrationDetails);
         if (pathNames[3] == "legacy") {
+          if (request.method != "POST") {
+            sendErrorMessage(405, "Use POST instead", response);
+            break;
+          }
           const accountCreation = await authService.registerUser(
             "legacy",
             registrationDetails,
@@ -98,7 +97,7 @@ export const AuthController = async (
                       const googleUserPayload: OAuthSignupDetails = {
                           username: payload.name,
                           email: payload.email,
-                          profileImage: payload.picture,
+                          profile_image: payload.picture,
                           oauth_provider: "google",
                         },
                         encryptedGoogleUser = await authService.registerUser(
@@ -125,6 +124,11 @@ export const AuthController = async (
         break;
       case "login":
         if (pathNames[3] == "legacy") {
+          if (request.method != "POST") {
+            sendErrorMessage(405, "Use POST instead", response);
+            break;
+          }
+
           const legacyPostDetails = await getRequestBody(request);
 
           const loginUser = await authService.loginUser(
@@ -178,7 +182,7 @@ export const AuthController = async (
                       const googleUserPayload: OAuthLoginDetails = {
                           username: payload.name,
                           email: payload.email,
-                          profileImage: payload.picture,
+                          profile_image: payload.picture,
                           oauth_provider: "google",
                         },
                         encryptedGoogleUser = await authService.loginUser(
@@ -205,6 +209,11 @@ export const AuthController = async (
 
         break;
       case "refresh":
+        if (request.method != "POST") {
+          sendErrorMessage(405, "Use POST instead", response);
+          break;
+        }
+
         const userRefreshToken: any = await getRequestBody(request);
 
         const newUserToken = await authService.refreshAccessToken(
@@ -213,7 +222,12 @@ export const AuthController = async (
 
         sendAuthMessage(201, newUserToken, response);
         break;
-      case "retreive":
+      case "retrieve":
+        if (request.method != "GET") {
+          sendErrorMessage(405, "Use GET instead", response);
+          break;
+        }
+
         const userObject = AuthValidator(request);
 
         if (!userObject.success) {

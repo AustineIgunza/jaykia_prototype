@@ -1,4 +1,11 @@
 import * as https from "https";
+import {
+  MPESA_CALLBACK_URL,
+  MPESA_CONSUMER_KEY,
+  MPESA_CONSUMER_SECRET,
+  MPESA_PASSKEY,
+  MPESA_SHORTCODE,
+} from "./../../../../Config/Env.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -26,18 +33,13 @@ function getMpesaTimestamp(): string {
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 export class MpesaInternalService {
-  private readonly consumerKey = process.env.MPESA_CKEY!;
-  private readonly consumerSecret = process.env.MPESA_CSECRET!;
-  private readonly shortCode = process.env.MPESA_SHORTCODE!;
-  private readonly passKey = process.env.MPESA_PASSKEY!;
-  private readonly callbackUrl = process.env.MPESA_CALLBACKURL!;
   private readonly baseUrl = "https://sandbox.safaricom.co.ke";
 
   // ── Token ──────────────────────────────────────────────────────────────────
 
   async generateToken(): Promise<string> {
     const auth = Buffer.from(
-      `${this.consumerKey}:${this.consumerSecret}`,
+      `${MPESA_CONSUMER_KEY}:${MPESA_CONSUMER_SECRET}`,
     ).toString("base64");
 
     return this.httpsGet<{ access_token: string }>(
@@ -59,21 +61,21 @@ export class MpesaInternalService {
     const token = await this.generateToken();
     const timestamp = getMpesaTimestamp();
     const password = Buffer.from(
-      `${this.shortCode}${this.passKey}${timestamp}`,
+      `${MPESA_SHORTCODE}${MPESA_PASSKEY}${timestamp}`,
     ).toString("base64");
 
     const normalised = normalisePhone(phoneNumber);
 
     const body = {
-      BusinessShortCode: this.shortCode,
+      BusinessShortCode: MPESA_SHORTCODE,
       Password: password,
       Timestamp: timestamp,
       TransactionType: "CustomerPayBillOnline",
       Amount: Math.round(amount), // Safaricom rejects decimals
       PartyA: normalised,
-      PartyB: this.shortCode,
+      PartyB: MPESA_SHORTCODE,
       PhoneNumber: normalised,
-      CallBackURL: this.callbackUrl,
+      CallBackURL: MPESA_CALLBACK_URL,
       AccountReference: paymentId.slice(0, 12),
       TransactionDesc: "Booking Payment",
     };

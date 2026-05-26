@@ -7,6 +7,7 @@ import type {
   UserRepository,
 } from "./user.types.js";
 import { ErrorMsg } from "../../../Utilities/Logger.js";
+import bcrypt from "bcryptjs";
 
 export class UserRepo implements UserRepository {
   constructor(private database: Database) {}
@@ -36,11 +37,12 @@ export class UserRepo implements UserRepository {
 
       for (let [key, value] of Object.entries(newUserDetails)) {
         keys.push(`${key}=$${paramIndex++}`);
-        values.push(value);
+        if (key == "password") values.push(bcrypt.hashSync(value, 10));
+        else values.push(value);
       }
 
       const updateUserQuery: QueryResult<User> = await this.database.query(
-          `UPDATE SET ${keys.join(",")} WHERE id=$1`,
+          `UPDATE users SET ${keys.join(",")} WHERE id=$1 RETURNING *`,
           [userId, ...values],
         ),
         updatedUser = updateUserQuery.rows[0];
@@ -70,7 +72,7 @@ export class UserRepo implements UserRepository {
   async getAllUsers(): Promise<User[]> {
     try {
       const getUserQuery: QueryResult<User> = await this.database.query(
-          "SELECT * FROM users WHERE",
+          "SELECT * FROM users",
         ),
         retrievedUser = getUserQuery.rows;
 

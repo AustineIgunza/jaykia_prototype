@@ -2,64 +2,70 @@ import type { IncomingMessage, ServerResponse } from "http";
 import type { Database } from "../../../Config/DB.js";
 import { UserRoleRepo } from "./user_roles.repository.js";
 import { UserRolesServ } from "./user_roles.service.js";
+import {
+  getRequestBody,
+  sendErrorMessage,
+  sendResponseMessage,
+} from "../../../../Utilities/HttpFunctions.js";
+import { AuthValidator } from "../../../Middleware/AuthChecker.js";
 
-export const UserRoleController = (
+export const UserRoleController = async (
   database: Database,
   request: IncomingMessage,
   response: ServerResponse<IncomingMessage>,
 ) => {
+  const requestUrl = new URL(request.url!, `http://${request.headers.host}`),
+    pathnames = requestUrl.pathname.split("/").filter(Boolean);
+
   const userRoleRepo = new UserRoleRepo(database),
     userRoleService = new UserRolesServ(userRoleRepo);
 
-  let unparsedReqBody: string = "";
+  const userObject = AuthValidator(request);
+  if (!userObject.userId)
+    return sendErrorMessage(
+      userObject.statusCode,
+      userObject.errorMsg,
+      response,
+    );
 
-  request.on("data", (data: Buffer) => {
-    unparsedReqBody += data.toString();
-  });
+  try {
+    switch (request.method) {
+      case "GET":
+        let requestBody: any;
 
-  request.on("end", async () => {
-    try {
-      const parsedReqBody = JSON.parse(unparsedReqBody || "{}"),
-        { userId, roleId } = parsedReqBody;
-
-      switch (request.method) {
-        case "GET":
-          const userRoles = await userRoleService.getUserRoles(userId);
-
-          response.writeHead(200);
-          response.end(JSON.stringify(userRoles));
-          break;
-        case "POST":
-          const createUserRole = await userRoleService.createUserRole(
-            userId,
-            roleId,
+        if (!pathnames[2])
+          requestBody = await userRoleService.getUserRoles(userObject.userId);
+        else if (pathnames[2] == "permissions")
+          requestBody = await userRoleService.getUserRolesWithPermissions(
+            userObject.userId,
           );
 
-          response.writeHead(201);
-          response.end(JSON.stringify(createUserRole));
-          break;
-        case "DELETE":
-          await userRoleService.deleteUserRole(userId, roleId);
+        sendResponseMessage(200, requestBody, response);
+        break;
+      case "POST":
+        if (!pathnames[2])
+          return sendErrorMessage(400, "Invalid role id passed in", response);
 
-          response.writeHead(204);
-          response.end();
-          break;
-        default:
-          response.writeHead(405);
-          response.end(
-            JSON.stringify({
-              error: "Invalid http method, try again",
-            }),
-          );
-          break;
-      }
-    } catch (error) {
-      response.writeHead(400);
-      response.end(
-        JSON.stringify({
-          error: (error as Error).message,
-        }),
-      );
+        const createUserRole = await userRoleService.createUserRole(
+          userObject.userId,
+          pathnames[2],
+        );
+
+        sendResponseMessage(201, createUserRole, response);
+        break;
+      case "DELETE":
+        if (!pathnames[2])
+          return sendErrorMessage(400, "Invalid role id passed in", response);
+
+        await userRoleService.deleteUserRole(userObject.userId, pathnames[2]);
+
+        sendResponseMessage(204, "Deletion successful", response);
+        break;
+      default:
+        sendErrorMessage(405, "Invalid HTTP method, try again", response);
+        break;
     }
-  });
+  } catch (error) {
+    sendErrorMessage(400, (error as Error).message, response);
+  }
 };

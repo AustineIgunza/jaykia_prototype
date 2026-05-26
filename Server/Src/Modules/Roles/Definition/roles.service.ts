@@ -4,6 +4,7 @@ import type {
   Role,
   RoleRepository,
   RoleService,
+  RoleWithPermissions,
   updateRoleDTO,
 } from "./roles.types.js";
 
@@ -54,6 +55,18 @@ export class Roleservice implements RoleService {
       return retrieveRoles;
     } catch (error) {
       Warning("Error occured at create role");
+      throw error;
+    }
+  }
+
+  async getRoleWithPermissions(roleId: string): Promise<RoleWithPermissions> {
+    try {
+      const rolePermissions: RoleWithPermissions =
+        await this.roleRepo.getRoleWithPermissions(roleId);
+
+      return rolePermissions;
+    } catch (error) {
+      Warning("Error at retrieving role with permis");
       throw error;
     }
   }

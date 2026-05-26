@@ -33,21 +33,41 @@ export const FeedbackController = async (
         if (pathnames[2] == "all") {
           const allFeedback = await feedbackService.getAllFeedback();
           sendResponseMessage(200, allFeedback, response);
+        } else if (pathnames[2] == "feedback") {
+          if (!pathnames[3])
+            return sendErrorMessage(
+              400,
+              "Invalid feedback id passed in",
+              response,
+            );
+
+          const feedbackId = pathnames[3],
+            specificFeedback = await feedbackService.getFeedback(feedbackId);
+
+          sendResponseMessage(200, specificFeedback, response);
         } else if (pathnames[2] == "user") {
+          if (!pathnames[3])
+            return sendErrorMessage(
+              400,
+              "Invalid feedback id passed in",
+              response,
+            );
+
+          const userId = pathnames[3],
+            specificFeedback = await feedbackService.getUserFeedback(userId);
+
+          sendResponseMessage(200, specificFeedback, response);
+        } else {
           const userFeedback = await feedbackService.getUserFeedback(
             userObject.userId,
           );
+
           sendResponseMessage(200, userFeedback, response);
-        } else {
-          const specificFeedback = await feedbackService.getFeedback(
-            pathnames[2]!,
-          );
-          sendResponseMessage(200, specificFeedback, response);
         }
 
         break;
       case "POST":
-        const postFeedbackBody = getRequestBody(request),
+        const postFeedbackBody = await getRequestBody(request),
           createFeedback = await feedbackService.createFeedback(
             userObject.userId,
             postFeedbackBody as any as createFeedbackDTO,
@@ -56,17 +76,28 @@ export const FeedbackController = async (
         sendResponseMessage(201, createFeedback, response);
         break;
       case "PATCH":
-        const patchFeedbackBody = getRequestBody(request),
+        if (!pathnames[2])
+          return sendErrorMessage(400, "Invalid feedback id", response);
+
+        const feedbackId = pathnames[2],
+          patchFeedbackBody = await getRequestBody(request),
           patchFeedback = await feedbackService.editFeedback(
             patchFeedbackBody as any as updateFeedbackDTO,
-            pathnames[2]!,
+            feedbackId,
             userObject.userId,
           );
 
         sendResponseMessage(200, patchFeedback, response);
         break;
       case "DELETE":
-        await feedbackService.deleteFeedback(pathnames[2]!, userObject.userId);
+        if (!pathnames[2])
+          return sendErrorMessage(
+            400,
+            "Invalid feedback id provided",
+            response,
+          );
+
+        await feedbackService.deleteFeedback(pathnames[2], userObject.userId);
 
         sendResponseMessage(204, "Deletion successful", response);
         break;

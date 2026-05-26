@@ -9,7 +9,7 @@ const db = new Database();
 
 const httpServer: Server = http.createServer(
     (request: IncomingMessage, response: ServerResponse<IncomingMessage>) =>
-      Router(db, request, response),
+      Router(db, request, response, socketServer),
   ),
   socketServer = new SocketIO(httpServer, db);
 

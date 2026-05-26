@@ -21,6 +21,7 @@ export type updateRefundDTO = Omit<
 export interface RefundRepository {
   createRefund: (
     userId: string,
+    bookingId: string,
     refundDetails: createRefundDTO,
   ) => Promise<Refund>;
   editRefund: (
@@ -35,6 +36,7 @@ export interface RefundRepository {
 export interface RefundService {
   createRefund: (
     userId: string,
+    bookingId: string,
     refundDetails: createRefundDTO,
   ) => Promise<Refund>;
   editRefund: (

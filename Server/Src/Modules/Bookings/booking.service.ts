@@ -30,7 +30,7 @@ export class BookingServ implements BookingService {
       ];
 
       let filteredBookingDetails: Record<string, any> = {};
-
+      console.log(filteredBookingDetails);
       for (let [key, value] of Object.entries(bookingDetails)) {
         if (!allowedFields.includes(key)) continue;
 
@@ -40,9 +40,8 @@ export class BookingServ implements BookingService {
         filteredBookingDetails[key] = value;
       }
 
-      filteredBookingDetails["user_id"] = userId;
-
       const createBookingQuery = await this.bookingRepo.createBooking(
+        userId,
         filteredBookingDetails as createBookingDTO,
       );
 
@@ -54,6 +53,7 @@ export class BookingServ implements BookingService {
   }
   async editBooking(
     userId: string,
+    bookingId: string,
     newBookingDetails: updateBookingDTO,
   ): Promise<Booking> {
     try {
@@ -68,11 +68,12 @@ export class BookingServ implements BookingService {
         "mode_of_transport",
         "flight_number",
         "departure_time",
+        "trip_status",
         "arrival_time",
-        "id",
         "cancelled",
         "cancelled_at",
         "reason",
+        "payment_amount",
       ];
 
       let newFilteredBookingDetails: Record<string, any> = {};
@@ -86,9 +87,9 @@ export class BookingServ implements BookingService {
         newFilteredBookingDetails[key] = value;
       }
 
-      newFilteredBookingDetails["user_id"] = userId;
-
       const editBookingQuery = await this.bookingRepo.editBooking(
+        userId,
+        bookingId,
         newFilteredBookingDetails as updateBookingDTO,
       );
 
@@ -127,9 +128,19 @@ export class BookingServ implements BookingService {
       throw error;
     }
   }
-  async deleteBooking(userId: string, bookingId: string): Promise<void> {
+  async getAllBookings(): Promise<Booking[]> {
     try {
-      await this.bookingRepo.deleteBooking(userId, bookingId);
+      const allBookings = await this.bookingRepo.getAllBookings();
+
+      return allBookings;
+    } catch (error) {
+      Warning("Error at retrieving all bookings");
+      throw error;
+    }
+  }
+  async deleteBooking(bookingId: string, userId: string): Promise<void> {
+    try {
+      await this.bookingRepo.deleteBooking(bookingId, userId);
     } catch (error) {
       Warning(`Error at deleting booking`);
       throw error;

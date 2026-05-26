@@ -24,18 +24,18 @@ export class AuthRepo implements AuthRepository {
         values: any[] = [];
 
       if (authType == "oauth") {
-        sqlQuery = `INSERT INTO users(username,email,oauth,oauth_provider) VALUES($1,$2,$3,$4)`;
+        sqlQuery = `INSERT INTO users(username,email,oauth,oauth_provider) VALUES($1,$2,$3,$4) RETURNING *`;
 
         const { username, email, oauth_provider } =
           userDetails as OAuthSignupDetails;
         values = [username, email, true, oauth_provider];
       } else {
-        sqlQuery = `INSERT INTO users(username,email,password) VALUES($1,$2,$3,$4)`;
+        sqlQuery = `INSERT INTO users(username,email,password,oauth) VALUES($1,$2,$3,$4) RETURNING *`;
 
         const { username, email, password } =
             userDetails as LegacySignupDetails,
           hashedPassword = bcrypt.hashSync(password, 10);
-        values = [username, email, hashedPassword];
+        values = [username, email, hashedPassword, false];
       }
 
       const insertUserQuery = await this.db.query(sqlQuery, values),

@@ -23,6 +23,7 @@ export const AuthValidator = (request: IncomingMessage): AuthInfo => {
 
   try {
     const userAuthToken = authorization.split(" ")[1];
+
     if (!userAuthToken)
       return {
         success: false,

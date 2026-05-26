@@ -54,12 +54,10 @@ export class UserServ implements UserService {
       if (!userId) throw new Error("User id must be provided");
 
       let allowedFields: string[] = [
-          "name",
+          "username",
           "email",
           "phone_number",
           "password",
-          "oauth",
-          "oauth_provider",
           "flag",
           "flag_reason",
           "deleted_at",
@@ -67,12 +65,12 @@ export class UserServ implements UserService {
         validatedUserDetails: Record<string, any> = {};
 
       for (let [key, value] of Object.entries(newUserDetails)) {
-        if (allowedFields.includes(key)) {
-          if (!value || value.toString().length <= 0)
-            throw new Error(`${key} has an empty value`);
+        if (!allowedFields.includes(key)) continue;
 
-          validatedUserDetails[key] = value;
-        }
+        if (!value || value.toString().length <= 0)
+          throw new Error(`${key} has an empty value`);
+
+        validatedUserDetails[key] = value;
       }
 
       const updatedUser = await this.userRepo.editUser(

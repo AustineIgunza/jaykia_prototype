@@ -38,7 +38,7 @@ export const RefundController = async (
           );
 
           sendResponseMessage(200, userRefunds, response);
-        } else if (!pathnames[2]) {
+        } else if (pathnames[2] == "all") {
           const roleChecker: boolean = await RoleChecker(
             "admin",
             database,
@@ -62,9 +62,15 @@ export const RefundController = async (
 
         break;
       case "POST":
+        if (!pathnames[2])
+          return sendErrorMessage(400, "Invalid booking id provided", response);
+
+        const bookingId = pathnames[2];
+
         const postRefundDetails: any = await getRequestBody(request),
           refundCreation: Refund = await refundService.createRefund(
             userDetails.userId,
+            bookingId,
             postRefundDetails,
           );
 

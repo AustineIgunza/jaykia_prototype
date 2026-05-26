@@ -17,7 +17,7 @@ export class FeedbackRepo implements FeedbackRepository {
   ): Promise<Feedback> {
     try {
       const sqlString: string =
-          "INSERT INTO feedback(user_id,feedback_type,feedback) VALUES($1,$2,$3)",
+          "INSERT INTO feedback(user_id,feedback_type,feedback) VALUES($1,$2,$3) RETURNING *",
         sqlQuery: QueryResult<Feedback> = await this.db.query(sqlString, [
           userId,
           feedbackDetails.feedback_type,
@@ -47,7 +47,7 @@ export class FeedbackRepo implements FeedbackRepository {
         values.push(value);
       }
 
-      const sqlQuery: string = `UPDATE feedback SET ${keys.join(",")} WHERE id=$1 AND user_id=$2`,
+      const sqlQuery: string = `UPDATE feedback SET ${keys.join(",")} WHERE id=$1 AND user_id=$2 RETURNING *`,
         editQuery: QueryResult<Feedback> = await this.db.query(sqlQuery, [
           feedbackId,
           userId,
@@ -107,7 +107,7 @@ export class FeedbackRepo implements FeedbackRepository {
 
   async deleteFeedback(feedbackId: string, userId: string): Promise<void> {
     try {
-      let sqlString: string = `DELETE FROM feedback WHERE id=$1 user_id=$2`;
+      let sqlString: string = `DELETE FROM feedback WHERE id=$1 AND user_id=$2`;
 
       await this.db.query(sqlString, [feedbackId, userId]);
     } catch (error) {

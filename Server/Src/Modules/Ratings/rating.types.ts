@@ -17,6 +17,7 @@ export type updateRatingDTO = Omit<Rating, "created_at" | "id" | "user_id"> &
 export interface RatingRepository {
   createRating: (
     userId: string,
+    bookingId: string,
     ratingDetails: createRatingDTO,
   ) => Promise<Rating>;
   editRating: (

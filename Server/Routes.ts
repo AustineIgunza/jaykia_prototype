@@ -5,12 +5,13 @@ import { UserController } from "./Src/Modules/Users/user.controller.js";
 import { UserRoleController } from "./Src/Modules/Roles/User Roles/user_roles.controller.js";
 import { AuthController } from "./Src/Modules/Auth/auth.controller.js";
 import { PermissionController } from "./Src/Modules/Permissions/Definitions/permissions.controller.js";
-import { UserPermissionController } from "./Src/Modules/Permissions/User Permissions/user_permissions.controller.js";
+import { RolePermissionController } from "./Src/Modules/Permissions/Role Permisions/role_permissions.controller.js";
 import { BookingController } from "./Src/Modules/Bookings/booking.controller.js";
 import { RatingController } from "./Src/Modules/Ratings/rating.controller.js";
 import { RefundController } from "./Src/Modules/Refunds/refund.controller.js";
 import { PaymentController } from "./Src/Modules/Payments/payments.controller.js";
 import { FeedbackController } from "./Src/Modules/Feedback/feedback.controller.js";
+import type { SocketIOService } from "./Src/Modules/Socket/socket.types.js";
 
 type Route = {
   name: string;
@@ -18,6 +19,7 @@ type Route = {
     database: Database,
     request: IncomingMessage,
     response: ServerResponse<IncomingMessage>,
+    ioSocket?: SocketIOService,
   ) => void;
 };
 
@@ -43,8 +45,8 @@ export const routes: Route[] = [
     controller: PermissionController,
   },
   {
-    name: "userpermissions",
-    controller: UserPermissionController,
+    name: "rolepermissions",
+    controller: RolePermissionController,
   },
   {
     name: "bookings",

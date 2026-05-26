@@ -21,6 +21,7 @@ export class AuthServ implements AuthService {
   constructor(private authRepo: AuthRepository) {}
 
   private createPublicUser(user: User): PublicUserDTO {
+    console.log(user);
     const { flag, flag_reason, oauth_provider, password, ...publicUser } = user;
     return publicUser;
   }
@@ -35,6 +36,7 @@ export class AuthServ implements AuthService {
         "email",
         "password",
         "oauth_provider",
+        "profile_image",
       ];
       let newUserDetails: Record<string, string> = {};
 

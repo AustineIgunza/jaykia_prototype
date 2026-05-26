@@ -2,77 +2,74 @@ import type { Database } from "../../../Config/DB.js";
 import type { IncomingMessage, ServerResponse } from "http";
 import { RoleRepo } from "./roles.repository.js";
 import { Roleservice } from "./roles.service.js";
+import {
+  getRequestBody,
+  sendErrorMessage,
+  sendResponseMessage,
+} from "../../../../Utilities/HttpFunctions.js";
+import { AuthValidator } from "../../../Middleware/AuthChecker.js";
 
-export const RoleController = (
+export const RoleController = async (
   database: Database,
   request: IncomingMessage,
   response: ServerResponse<IncomingMessage>,
-): void => {
+): Promise<void> => {
+  const requestUrl = new URL(request.url!, `http://${request.headers.host}`),
+    pathNames = requestUrl.pathname.split("/").filter(Boolean);
+
   const roleRepo = new RoleRepo(database),
     roleService = new Roleservice(roleRepo);
 
-  let unparsedReqBody: string = "";
+  const userObject = AuthValidator(request);
+  if (!userObject.success)
+    return sendErrorMessage(
+      userObject.statusCode,
+      userObject.errorMsg,
+      response,
+    );
 
-  request.on("data", (data: Buffer) => {
-    unparsedReqBody += data.toString();
-  });
+  try {
+    switch (request.method) {
+      case "GET":
+        let responseBody: any;
 
-  request.on("end", async () => {
-    const parsedReqBody = JSON.parse(unparsedReqBody || "{}");
+        if (!pathNames[2]) responseBody = await roleService.getRoles();
+        else if (pathNames[2] == "permissions") {
+          if (!pathNames[3])
+            return sendErrorMessage(400, "Invalid role id provided", response);
 
-    try {
-      switch (request.method) {
-        case "GET":
-          const retrieveRoles = await roleService.getRoles();
+          const roleId = pathNames[3];
+          responseBody = await roleService.getRoleWithPermissions(roleId);
+        }
 
-          response.writeHead(200);
-          response.end(JSON.stringify({ response: retrieveRoles }));
-          break;
-        case "POST":
-          const createRole = await roleService.createRole(parsedReqBody);
+        sendResponseMessage(200, responseBody, response);
+        break;
+      case "POST":
+        const postRoleBody: any = await getRequestBody(request),
+          createRole = await roleService.createRole(postRoleBody);
 
-          response.writeHead(201);
-          response.end(
-            JSON.stringify({
-              response: createRole,
-            }),
+        sendResponseMessage(201, createRole, response);
+        break;
+      case "PATCH":
+        const patchRoleBody: any = await getRequestBody(request),
+          updateRole = await roleService.editRole(
+            patchRoleBody.id,
+            patchRoleBody,
           );
-          break;
-        case "PATCH":
-          const updateRole = await roleService.editRole(
-            parsedReqBody.id,
-            parsedReqBody,
-          );
 
-          response.writeHead(200);
-          response.end(
-            JSON.stringify({
-              response: updateRole,
-            }),
-          );
-          break;
-        case "DELETE":
-          await roleService.deleteRole(parsedReqBody.id);
+        sendResponseMessage(200, updateRole, response);
+        break;
+      case "DELETE":
+        const deleteRoleBody: any = await getRequestBody(request);
+        await roleService.deleteRole(deleteRoleBody.id);
 
-          response.writeHead(204);
-          response.end();
-          break;
-        default:
-          response.writeHead(404);
-          response.end(
-            JSON.stringify({
-              error: "Invalid http method",
-            }),
-          );
-          break;
-      }
-    } catch (error) {
-      response.writeHead(400);
-      response.end(
-        JSON.stringify({
-          error: (error as Error).message,
-        }),
-      );
+        sendResponseMessage(204, "Deletion successfully", response);
+        break;
+      default:
+        sendErrorMessage(404, "Invalid HTTP method", response);
+        break;
     }
-  });
+  } catch (error) {
+    sendErrorMessage(400, (error as Error).message, response);
+  }
 };

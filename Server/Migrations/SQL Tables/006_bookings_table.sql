@@ -5,7 +5,7 @@ CREATE TABLE booking(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
     pickup_location TEXT NOT NULL,
-    drop_off_location TEXT NOT NULL,
+    dropoff_location TEXT NOT NULL,
     no_of_passengers INT NOT NULL,
     no_of_luggage_items INT NOT NULL,
     mode_of_transport transport_mode NOT NULL,
@@ -16,10 +16,11 @@ CREATE TABLE booking(
     cancelled_at TIMESTAMP,
     reason TEXT NOT NULL DEFAULT '',
     trip_status trip_status NOT NULL DEFAULT 'pending',
+    payment_amount INT,
 
     CONSTRAINT chk_flight_details CHECK (
         mode_of_transport != 'flight' OR 
-        (flight_number IS NOT NULL AND flight_departure IS NOT NULL AND flight_arrival IS NOT NULL)
+        (flight_number IS NOT NULL AND departure_time IS NOT NULL AND arrival_time IS NOT NULL)
     ),
 
     CONSTRAINT chk_cancellation_details CHECK (

@@ -1,7 +1,7 @@
 import type { Database } from "../../../Config/DB.js";
 import type { IncomingMessage, ServerResponse } from "http";
-import { UserPermissionRepo } from "./user_permissions.repository.js";
-import { UserPermissionServ } from "./user_permissions.service.js";
+import { RolePermissionRepo } from "./role_permissions.repository.js";
+import { UserPermissionServ } from "./role_permissions.service.js";
 import {
   getRequestBody,
   sendErrorMessage,
@@ -9,7 +9,7 @@ import {
 } from "../../../../Utilities/HttpFunctions.js";
 import { AuthValidator } from "../../../Middleware/AuthChecker.js";
 
-export const UserPermissionController = async (
+export const RolePermissionController = async (
   database: Database,
   request: IncomingMessage,
   response: ServerResponse<IncomingMessage>,
@@ -17,36 +17,34 @@ export const UserPermissionController = async (
   const requestUrl = new URL(request.url!, `http://${request.headers.host}`),
     pathnames: string[] = requestUrl.pathname.split("/").filter(Boolean);
 
-  const userPermissionRepo = new UserPermissionRepo(database),
-    userPermissionServ = new UserPermissionServ(userPermissionRepo);
+  const rolePermissionRepo = new RolePermissionRepo(database),
+    rolePermissionServ = new UserPermissionServ(rolePermissionRepo);
+
+  const userDetails = AuthValidator(request);
+  if (!userDetails.success)
+    return sendErrorMessage(
+      userDetails.statusCode,
+      userDetails.errorMsg,
+      response,
+    );
 
   try {
     switch (request.method) {
       case "GET":
         if (pathnames.length < 3 || !pathnames[2])
-          sendErrorMessage(400, "User id not provided", response);
+          sendErrorMessage(400, "Role id not provided", response);
 
-        const userId: string = pathnames[2]!,
-          userPermissions = await userPermissionServ.getUserPermissions(userId);
+        const roleId: string = pathnames[2]!,
+          rolePermissions = await rolePermissionServ.getRolePermissions(roleId);
 
-        sendResponseMessage(200, userPermissions, response);
+        sendResponseMessage(200, rolePermissions, response);
         break;
       case "POST":
-        const userAuthPost = AuthValidator(request),
-          reqBody = await getRequestBody(request);
+        const reqBody: any = await getRequestBody(request);
 
-        if (!userAuthPost.success) {
-          sendErrorMessage(
-            userAuthPost.statusCode,
-            userAuthPost.errorMsg,
-            response,
-          );
-          return;
-        }
-
-        const createRequest = await userPermissionServ.createUPermission(
-          userAuthPost.userId,
-          (reqBody as any).id,
+        const createRequest = await rolePermissionServ.createRPermission(
+          reqBody.role_id,
+          reqBody.permission_id,
         );
 
         sendResponseMessage(201, createRequest, response);
@@ -63,7 +61,7 @@ export const UserPermissionController = async (
           return;
         }
 
-        await userPermissionServ.deleteUPermissions(
+        await rolePermissionServ.deleteRolePermissions(
           userAuthDel.userId,
           (reqBody as any).id,
         );

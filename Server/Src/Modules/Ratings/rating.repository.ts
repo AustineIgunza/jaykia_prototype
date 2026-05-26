@@ -13,24 +13,25 @@ export class RatingRepo implements RatingRepository {
 
   async createRating(
     userId: string,
+    bookingId: string,
     ratingDetails: createRatingDTO,
   ): Promise<Rating> {
     try {
       let sqlString: string, sqlQuery: QueryResult<Rating>;
 
       if (ratingDetails.comments && ratingDetails.comments.length > 0) {
-        sqlString = `INSERT INTO ratings(user_id,booking_id,rating,comments) VALUES($1,$2,$3,$4)`;
+        sqlString = `INSERT INTO ratings(user_id,booking_id,rating,comments) VALUES($1,$2,$3,$4) RETURNING *`;
         sqlQuery = await this.db.query(sqlString, [
           userId,
-          ratingDetails.booking_id,
+          bookingId,
           ratingDetails.rating,
           ratingDetails.comments,
         ]);
       } else {
-        sqlString = `INSERT INTO ratings(user_id,booking_id,rating) VALUES($1,$2,$3)`;
+        sqlString = `INSERT INTO ratings(user_id,booking_id,rating) VALUES($1,$2,$3) RETURNING *`;
         sqlQuery = await this.db.query(sqlString, [
           userId,
-          ratingDetails.booking_id,
+          bookingId,
           ratingDetails.rating,
         ]);
       }
@@ -59,8 +60,9 @@ export class RatingRepo implements RatingRepository {
         values.push(value);
       }
 
-      const sqlQuery: string = `UPDATE ratings SET ${keys.join(",")} WHERE id=$1 and user_id=$2`,
-        editQuery: QueryResult<Rating> = await this.db.query(sqlQuery, [
+      const sqlQuery: string = `UPDATE ratings SET ${keys.join(",")} WHERE id=$1 and user_id=$2 RETURNING *`;
+
+      const editQuery: QueryResult<Rating> = await this.db.query(sqlQuery, [
           ratingId,
           userId,
           ...values,

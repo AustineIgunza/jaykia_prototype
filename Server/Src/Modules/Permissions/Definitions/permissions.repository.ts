@@ -1,4 +1,3 @@
-import { constrainedMemory } from "process";
 import type {
   createPermissionDTO,
   Permission,
@@ -19,7 +18,7 @@ export class PermissionRepo implements PermissionRepository {
       const { name, description } = permissionDetails;
 
       const sqlQuery =
-          "INSERT INTO permissions(name,description) VALUES($1,$2)",
+          "INSERT INTO permissions(name,description) VALUES($1,$2) RETURNING *",
         permissionCreation = await this.db.query(sqlQuery, [name, description]),
         permissionResult = permissionCreation.rows[0];
 
@@ -43,7 +42,7 @@ export class PermissionRepo implements PermissionRepository {
         values.push(value);
       }
 
-      const sqlQuery: string = `UPDATE permissions SET ${keys.join(",")}`,
+      const sqlQuery: string = `UPDATE permissions SET ${keys.join(",")} RETURNING *`,
         editQuery: QueryResult<Permission> = await this.db.query(sqlQuery, [
           ...values,
         ]),

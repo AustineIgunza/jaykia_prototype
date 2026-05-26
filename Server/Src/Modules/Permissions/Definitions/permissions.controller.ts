@@ -3,128 +3,76 @@ import type { IncomingMessage, ServerResponse } from "http";
 import { PermissionRepo } from "./permissions.repository.js";
 import { PermissionService } from "./permissions.service.js";
 import type { Permission } from "./permissions.types.js";
+import {
+  getRequestBody,
+  sendErrorMessage,
+  sendResponseMessage,
+} from "../../../../Utilities/HttpFunctions.js";
 
-export const PermissionController = (
+export const PermissionController = async (
   database: Database,
   request: IncomingMessage,
   response: ServerResponse<IncomingMessage>,
 ) => {
   const requestUrl = new URL(request.url!, `http://${request.headers.host}`),
-    searchParams = requestUrl.searchParams;
+    pathNames: string[] = requestUrl.pathname.split("/").filter(Boolean);
 
   const permissionRepo = new PermissionRepo(database),
     permissionService = new PermissionService(permissionRepo);
 
-  let unparsedReqBody: string = "";
+  try {
+    switch (request.method) {
+      case "GET":
+        let responseBody: any;
 
-  request.on("data", (data: Buffer) => {
-    unparsedReqBody += data.toString();
-  });
+        if (!pathNames[2])
+          responseBody = await permissionService.getAllPermission();
+        else {
+          const permissionId = pathNames[2];
 
-  request.on("end", async () => {
-    try {
-      const parsedReqBody = JSON.parse(unparsedReqBody || "{}");
+          responseBody = await permissionService.getPermission(permissionId);
+        }
 
-      switch (request.method) {
-        case "GET":
-          const type = searchParams.get("type");
+        sendResponseMessage(200, responseBody, response);
 
-          if (!type) {
-            response.writeHead(400, {
-              "Content-type": "application/json",
-            });
-            response.end(
-              JSON.stringify({
-                error: "Search param, type not provided, specify all or one",
-              }),
-            );
-            return;
-          }
+        break;
+      case "POST":
+        const postReqBody: any = await getRequestBody(request);
 
-          let responseBody: any;
+        const permissionCreation: Permission =
+          await permissionService.createPermission(postReqBody);
 
-          if (type == "all")
-            responseBody = await permissionService.getAllPermission();
-          else {
-            const permissionId = searchParams.get("permissionid");
-            if (!permissionId) {
-              response.writeHead(400, {
-                "Content-type": "application/json",
-              });
-              response.end(
-                JSON.stringify({
-                  error: "Permission id not provided",
-                }),
-              );
-              return;
-            }
+        sendResponseMessage(201, permissionCreation, response);
 
-            responseBody = await permissionService.getPermission(permissionId);
-          }
+        break;
+      case "PATCH":
+        const patchReqBody: any = await getRequestBody(request);
 
-          response.writeHead(200, {
-            "Content-type": "application/json",
-          });
-          response.end(JSON.stringify(responseBody));
+        const permissionUpdate: Permission =
+          await permissionService.editPermission(patchReqBody);
 
-          break;
-        case "POST":
-          const permissionCreation: Permission =
-            await permissionService.createPermission(parsedReqBody);
+        sendResponseMessage(200, permissionUpdate, response);
 
-          response.writeHead(201, {
-            "Content-type": "application/json",
-          });
-          response.end(JSON.stringify(permissionCreation));
-
-          break;
-        case "PATCH":
-          const permissionUpdate: Permission =
-            await permissionService.editPermission(parsedReqBody);
-
-          response.writeHead(200, {
-            "Content-type": "application/json",
-          });
-          response.end(JSON.stringify(permissionUpdate));
-
-          break;
-        case "DELETE":
-          const permissionId = searchParams.get("permissionid");
-          if (!permissionId) {
-            response.writeHead(400);
-            response.end(
-              JSON.stringify({
-                error: "Search param not provided, permission id required",
-              }),
-            );
-            return;
-          }
-
-          await permissionService.deletePermission(permissionId);
-
-          response.writeHead(204);
-          response.end();
-
-          break;
-        default:
-          response.writeHead(405);
-          response.end(
-            JSON.stringify({
-              error: "Invalid HTTP header method",
-            }),
+        break;
+      case "DELETE":
+        if (!pathNames[2])
+          return sendErrorMessage(
+            400,
+            "Invalid permission id in url pathname",
+            response,
           );
 
-          break;
-      }
-    } catch (error) {
-      if (!response.headersSent) {
-        response.writeHead(500);
-        response.end(
-          JSON.stringify({
-            error: (error as Error).message,
-          }),
-        );
-      } else request.destroy();
+        const permissionId = pathNames[2];
+
+        await permissionService.deletePermission(permissionId);
+
+        sendResponseMessage(204, "Permission deleted successfully", response);
+        break;
+      default:
+        sendErrorMessage(405, "Invalid HTTP method header", response);
+        break;
     }
-  });
+  } catch (error) {
+    sendErrorMessage(500, `${(error as Error).message}`, response);
+  }
 };

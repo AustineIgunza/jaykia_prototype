@@ -12,13 +12,14 @@ export class RefundServ implements RefundService {
 
   async createRefund(
     userId: string,
+    bookingId: string,
     refundDetails: createRefundDTO,
   ): Promise<Refund> {
     try {
-      if (!userId || !refundDetails)
+      if (!userId || !bookingId || !refundDetails)
         throw new Error("User id and refund details not provided");
 
-      const allowedFields: string[] = ["bookingId", "reason"];
+      const allowedFields: string[] = ["reason"];
       let filteredRefundDetails: Record<string, any> = {};
 
       for (let [key, value] of Object.entries(refundDetails)) {
@@ -31,6 +32,7 @@ export class RefundServ implements RefundService {
 
       const refundCreation = await this.refundRepo.createRefund(
         userId,
+        bookingId,
         filteredRefundDetails as createRefundDTO,
       );
 

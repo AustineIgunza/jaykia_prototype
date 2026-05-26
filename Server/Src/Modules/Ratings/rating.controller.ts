@@ -53,32 +53,32 @@ export const RatingController = async (
 
         break;
       case "POST":
-        const postBody: any = getRequestBody(request);
+        const postBody: any = await getRequestBody(request);
+
+        if (!pathnames[2])
+          return sendErrorMessage(400, "Booking id not provided", response);
 
         let postBookingId = pathnames[2];
-        if (!postBookingId)
-          sendErrorMessage(400, "Booking id not provided", response);
-        else {
-          const newRating = ratingService.createRating(
-            userDetails.userId,
-            postBookingId,
-            postBody,
-          );
 
-          sendResponseMessage(201, newRating, response);
-        }
+        const newRating = await ratingService.createRating(
+          userDetails.userId,
+          postBookingId,
+          postBody,
+        );
+
+        sendResponseMessage(201, newRating, response);
 
         break;
       case "PATCH":
-        const patchedBody: any = getRequestBody(request);
+        const patchedBody: any = await getRequestBody(request);
 
-        let patchbookingId = pathnames[2];
-        if (!patchbookingId)
-          sendErrorMessage(400, "Booking id not provided", response);
+        let patchRatingId = pathnames[2];
+        if (!patchRatingId)
+          sendErrorMessage(400, "Rating id not provided", response);
         else {
           const patchedRating = await ratingService.editRating(
             userDetails.userId,
-            patchbookingId,
+            patchRatingId,
             patchedBody,
           );
 
@@ -87,12 +87,12 @@ export const RatingController = async (
 
         break;
       case "DELETE":
-        let deleteBookingId = pathnames[2];
+        let deleteRatingId = pathnames[2];
 
-        if (!deleteBookingId)
-          sendErrorMessage(400, "Booking id not provided", response);
+        if (!deleteRatingId)
+          sendErrorMessage(400, "Rating id not provided", response);
         else {
-          await ratingService.deleteRating(userDetails.userId, deleteBookingId);
+          await ratingService.deleteRating(deleteRatingId, userDetails.userId);
 
           sendResponseMessage(204, "Deleted successfully", response);
         }

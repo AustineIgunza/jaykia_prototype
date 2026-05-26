@@ -4,12 +4,21 @@ import { BookingRepo } from "./booking.repository.js";
 import { BookingServ } from "./booking.service.js";
 import { AuthValidator } from "../../Middleware/AuthChecker.js";
 import type { Booking } from "./booking.types.js";
-import { Warning } from "../../../Utilities/Logger.js";
+import { ErrorMsg } from "../../../Utilities/Logger.js";
+import type { SocketIOService } from "../Socket/socket.types.js";
+import {
+  getRequestBody,
+  sendErrorMessage,
+  sendResponseMessage,
+} from "../../../Utilities/HttpFunctions.js";
+import { UserRoleRepo } from "../Roles/User Roles/user_roles.repository.js";
+import { UserRolesServ } from "../Roles/User Roles/user_roles.service.js";
 
-export const BookingController = (
+export const BookingController = async (
   database: Database,
   request: IncomingMessage,
   response: ServerResponse<IncomingMessage>,
+  socketIO?: SocketIOService,
 ) => {
   const requestUrl = new URL(request.url!, `http://${request.headers.host}`),
     pathNames: string[] = requestUrl.pathname.split("/").filter(Boolean);
@@ -17,104 +26,103 @@ export const BookingController = (
   const bookingRepo = new BookingRepo(database),
     bookingService = new BookingServ(bookingRepo);
 
-  let unparsedReqBody: string = "";
-
-  request.on("data", (data: Buffer) => {
-    unparsedReqBody += data.toString();
-  });
-
-  request.on("end", async () => {
+  try {
     const userObject = AuthValidator(request);
 
     if (userObject.success == false) {
-      if (userObject.errorMsg.includes("not provided")) {
-        response.writeHead(401);
-        response.end(
-          JSON.stringify({
-            error: "Auth token not provided",
-          }),
-        );
-        return;
-      } else {
-        response.writeHead(403);
-        response.end(
-          JSON.stringify({
-            error: "Auth token invalid",
-          }),
-        );
-        return;
-      }
+      sendErrorMessage(401, userObject.errorMsg, response);
+      return;
     }
 
-    try {
-      const parsedReqBody = JSON.parse(unparsedReqBody || "{}");
+    switch (request.method) {
+      case "GET":
+        let responseBody: any;
 
-      switch (request.method) {
-        case "GET":
-          let responseBody: any;
-
-          if (pathNames[2] == "one")
-            responseBody = await bookingService.getBooking(
-              userObject.userId,
-              parsedReqBody.id,
-            );
-          else if (pathNames[2] == "user")
-            responseBody = await bookingService.getUserBookings(
-              userObject.userId,
+        if (!pathNames[2])
+          responseBody = await bookingService.getUserBookings(
+            userObject.userId,
+          );
+        else if (pathNames[2] == "all")
+          responseBody = await bookingService.getAllBookings();
+        else if (pathNames[2] == "user") {
+          if (!pathNames[3])
+            sendErrorMessage(
+              400,
+              "Invalid user id passed in on url segment",
+              response,
             );
           else {
-            response.writeHead(404);
-            response.end(JSON.stringify({ error: "Invalid http api route " }));
-            return;
+            responseBody = await bookingService.getUserBookings(pathNames[3]);
           }
+        }
 
-          response.writeHead(200);
-          response.end(JSON.stringify(responseBody));
-          break;
-        case "POST":
-          const newBooking: Booking = await bookingService.createBooking(
-            userObject.userId,
-            parsedReqBody,
-          );
+        sendResponseMessage(200, responseBody, response);
+        break;
+      case "POST":
+        const postReqBody: any = await getRequestBody(request);
 
-          response.writeHead(201);
-          response.end(JSON.stringify(newBooking));
-          break;
-        case "PATCH":
-          const patchedBooking: Booking = await bookingService.editBooking(
-            userObject.userId,
-            parsedReqBody,
-          );
+        const newBooking: Booking = await bookingService.createBooking(
+          userObject.userId,
+          postReqBody,
+        );
 
-          response.writeHead(200);
-          response.end(JSON.stringify(patchedBooking));
-          break;
-        case "DELETE":
-          await bookingService.deleteBooking(
-            userObject.userId,
-            parsedReqBody.id,
-          );
+        if (socketIO) socketIO.emitToAdmins("booking:new", newBooking);
 
-          response.writeHead(204);
-          response.end();
-          break;
-        default:
-          response.writeHead(405);
-          response.end(
-            JSON.stringify({
-              error: "Invalid HTTP header method",
-            }),
-          );
-          break;
-      }
-    } catch (error) {
-      Warning(`Error at booking controller`);
-      response.writeHead(400);
-      response.end(
-        JSON.stringify({
-          error: (error as Error).message,
-        }),
-      );
+        sendResponseMessage(201, newBooking, response);
+        break;
+      case "PATCH":
+        const patchReqBody: any = await getRequestBody(request);
+
+        if (!pathNames[2])
+          return sendErrorMessage(400, "Invalid booking id provided", response);
+
+        const bookingId = pathNames[2];
+
+        if (patchReqBody.trip_status) {
+          const userRoleRepo = new UserRoleRepo(database),
+            userRoleService = new UserRolesServ(userRoleRepo),
+            userRoles = await userRoleService.getUserRoles(userObject.userId);
+
+          if (!userRoles.roles.includes("admin")) {
+            sendErrorMessage(
+              403,
+              "Unauthorized, requires higher priviledges",
+              response,
+            );
+          }
+        }
+        const patchedBooking: Booking = await bookingService.editBooking(
+          userObject.userId,
+          bookingId,
+          patchReqBody,
+        );
+
+        if (socketIO)
+          socketIO.emitToAdmins("booking:statusUpdate", patchedBooking);
+
+        sendResponseMessage(200, patchedBooking, response);
+        break;
+      case "DELETE":
+        if (!pathNames[2])
+          return sendErrorMessage(400, "Invalid booking id provided", response);
+
+        const getBooking = await bookingService.getBooking(
+          pathNames[2],
+          userObject.userId,
+        );
+
+        await bookingService.deleteBooking(userObject.userId, pathNames[2]);
+
+        if (socketIO) socketIO.emitToAdmins("booking:deletion", getBooking);
+
+        sendResponseMessage(204, "Deleted successfully", response);
+        break;
+      default:
+        sendErrorMessage(405, "Invalid HTTP header method", response);
+        break;
     }
-  });
+  } catch (error) {
+    ErrorMsg(error as Error);
+    sendErrorMessage(400, (error as Error).message, response);
+  }
 };

@@ -28,16 +28,15 @@ export class RatingServ implements RatingService {
       for (let [key, value] of Object.entries(ratingDetails)) {
         if (!allowedFields.includes(key)) continue;
 
-        if (!value || value.toString().length > 0)
+        if (!value && value.toString().length > 0)
           throw new Error(`${key} has an empty value`);
 
         filteredRatingDetails[key] = value;
       }
 
-      filteredRatingDetails["id"] = bookingId;
-
       const createRating: Rating = await this.ratingRepo.createRating(
         userId,
+        bookingId,
         filteredRatingDetails as createRatingDTO,
       );
 
@@ -56,7 +55,7 @@ export class RatingServ implements RatingService {
     try {
       if (!ratingDetails) throw new Error("Rating details not provided");
 
-      const allowedFields: string[] = ["name", "description"];
+      const allowedFields: string[] = ["rating", "comments"];
       let filteredRatingDetails: Record<string, any> = {};
 
       for (let [key, value] of Object.entries(ratingDetails)) {

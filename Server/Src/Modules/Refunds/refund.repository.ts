@@ -13,14 +13,15 @@ export class RefundRepo implements RefundRepository {
 
   async createRefund(
     userId: string,
+    bookingId: string,
     refundDetails: createRefundDTO,
   ): Promise<Refund> {
     try {
       const sqlString: string =
-          "INSERT INTO refunds(user_id,booking_id,reason,approved) VALUES($1,$2,$3,$4)",
+          "INSERT INTO refunds(user_id,booking_id,reason,approved) VALUES($1,$2,$3,$4) RETURNING *",
         sqlQuery: QueryResult<Refund> = await this.db.query(sqlString, [
           userId,
-          refundDetails.booking_id,
+          bookingId,
           refundDetails.reason,
           "pending",
         ]),
@@ -48,7 +49,7 @@ export class RefundRepo implements RefundRepository {
         values.push(value);
       }
 
-      const sqlString: string = `UPDATE refunds SET ${keys.join(",")} WHERE id=$1 and user_id=$2`,
+      const sqlString: string = `UPDATE refunds SET ${keys.join(",")} WHERE id=$1 and user_id=$2 RETURNING *`,
         sqlQuery: QueryResult<Refund> = await this.db.query(sqlString, [
           refundId,
           userId,
