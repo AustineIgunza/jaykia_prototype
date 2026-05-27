@@ -194,7 +194,7 @@ export interface UpdateBookingDTO {
 
 // ─── Payments ───
 
-export type PaymentMethod = "m-pesa" | "bank";
+export type PaymentMethod = "m-pesa" | "mpesa" | "bank";
 export type PaymentStatus = "paid" | "pending" | "cancelled" | "failed";
 
 export interface Payment {

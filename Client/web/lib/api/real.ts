@@ -1,5 +1,7 @@
 // ─── Real HTTP API client ───
-// Calls the actual backend at NEXT_PUBLIC_API_BASE_URL.
+// Requests go to /api/* on the same origin (Next.js proxy route
+// forwards them to the backend at BACKEND_URL, unwraps the response
+// envelope, and translates auth cookie → JSON body).
 
 import type { ApiClient } from "./client";
 import type {
@@ -35,10 +37,81 @@ import type {
   DashboardSummary,
   MonthlyReport,
   UserPermission,
+  PaymentMethod,
 } from "./types";
 import { getAccessToken } from "@/lib/auth/token";
 
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+// ─── Field translation helpers ──────────────────────────────────────────────
+
+function bookingToBackend(
+  data: Partial<CreateBookingDTO & UpdateBookingDTO>
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v === undefined) continue;
+    switch (k) {
+      case "drop_off_location":
+        out["dropoff_location"] = v;
+        break;
+      case "flight_departure":
+        out["departure_time"] = v;
+        break;
+      case "flight_arrival":
+        out["arrival_time"] = v;
+        break;
+      case "contact_name":
+      case "contact_phone":
+      case "contact_email":
+      case "child_seat":
+      case "notes":
+        break;
+      default:
+        out[k] = v;
+    }
+  }
+  return out;
+}
+
+function bookingFromBackend(raw: Record<string, unknown>): Booking {
+  const {
+    dropoff_location,
+    departure_time,
+    arrival_time,
+    payment_amount: _pa,
+    ...rest
+  } = raw;
+  return {
+    ...rest,
+    drop_off_location: (dropoff_location as string) ?? "",
+    flight_departure: (departure_time as string) ?? null,
+    flight_arrival: (arrival_time as string) ?? null,
+  } as Booking;
+}
+
+function bookingsFromBackend(raw: unknown): Booking[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((b) => bookingFromBackend(b as Record<string, unknown>));
+}
+
+function paymentMethodFromBackend(m: string): PaymentMethod {
+  return m === "mpesa" ? "m-pesa" : (m as PaymentMethod);
+}
+
+function paymentFromBackend(raw: Record<string, unknown>): Payment {
+  return {
+    ...raw,
+    payment_method: paymentMethodFromBackend(
+      raw.payment_method as string
+    ),
+  } as Payment;
+}
+
+function paymentsFromBackend(raw: unknown): Payment[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((p) => paymentFromBackend(p as Record<string, unknown>));
+}
+
+// ─── HTTP helper ────────────────────────────────────────────────────────────
 
 async function request<T>(
   path: string,
@@ -53,222 +126,276 @@ async function request<T>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${BASE}${path}`, {
-    ...options,
-    headers,
-  });
+  const res = await fetch(path, { ...options, headers });
 
   if (res.status === 204) return undefined as T;
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.error || `Request failed: ${res.status}`);
+    throw new Error(
+      (data as Record<string, string>).error || `Request failed: ${res.status}`
+    );
   }
   return data as T;
 }
 
+// ─── Client implementation ──────────────────────────────────────────────────
+
 export const realClient: ApiClient = {
-  // Auth
-  // TODO: verify against backend — auth routes not registered yet
+  // ── Auth ─────────────────────────────────────────────────────────────────
+
   register: (details: LegacySignupDetails) =>
-    request<AuthResponse>("/auth/register/legacy", {
+    request<AuthResponse>("/api/auth/register/legacy", {
       method: "POST",
       body: JSON.stringify(details),
     }),
 
   login: (details: LegacyLoginDetails) =>
-    request<AuthResponse>("/auth/login/legacy", {
+    request<AuthResponse>("/api/auth/login/legacy", {
       method: "POST",
       body: JSON.stringify(details),
     }),
 
   refreshToken: (refreshToken: string) =>
-    request<AuthRefreshToken>("/auth/refresh", {
+    request<AuthRefreshToken>("/api/auth/refresh", {
       method: "POST",
       body: JSON.stringify({ refreshToken }),
     }),
 
-  // 2FA
-  setup2FA: () =>
-    request<TwoFactorSetupResponse>("/auth/2fa/setup", { method: "POST" }),
+  // ── 2FA (not implemented on backend — stubs) ────────────────────────────
 
-  verifySetup2FA: (code: string) =>
-    request<TwoFactorVerifySetupResponse>("/auth/2fa/verify-setup", {
-      method: "POST",
-      body: JSON.stringify({ code }),
-    }),
+  setup2FA: (): Promise<TwoFactorSetupResponse> =>
+    Promise.reject(new Error("2FA is not available on this server")),
 
-  verify2FA: (tempToken: string, code: string) =>
-    request<AuthResponse>("/auth/2fa/verify", {
-      method: "POST",
-      body: JSON.stringify({ tempToken, code }),
-    }),
+  verifySetup2FA: (_code: string): Promise<TwoFactorVerifySetupResponse> =>
+    Promise.reject(new Error("2FA is not available on this server")),
 
-  disable2FA: (code: string) =>
-    request<void>("/auth/2fa/disable", {
-      method: "POST",
-      body: JSON.stringify({ code }),
-    }),
+  verify2FA: (_tempToken: string, _code: string): Promise<AuthResponse> =>
+    Promise.reject(new Error("2FA is not available on this server")),
 
-  // Users
-  getUsers: () => request<PublicUserDTO[]>("/users/all"),
+  disable2FA: (_code: string): Promise<void> =>
+    Promise.reject(new Error("2FA is not available on this server")),
 
-  getUser: (userId: string) => request<PublicUserDTO>(`/users/${userId}`),
+  // ── Users ────────────────────────────────────────────────────────────────
 
-  createUser: (data: CreateUserDTO) =>
-    request<PublicUserDTO>("/users", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+  getUsers: () => request<PublicUserDTO[]>("/api/users/all"),
 
-  updateUser: (userId: string, data: UpdateUserDTO) =>
-    request<PublicUserDTO>(`/users/${userId}`, {
+  getUser: (_userId: string) => request<PublicUserDTO>("/api/users"),
+
+  createUser: (_data: CreateUserDTO): Promise<PublicUserDTO> =>
+    Promise.reject(new Error("Use register instead")),
+
+  updateUser: (_userId: string, data: UpdateUserDTO) =>
+    request<PublicUserDTO>("/api/users", {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
 
-  deleteUser: (userId: string) =>
-    request<void>(`/users/${userId}`, { method: "DELETE" }),
+  deleteUser: (_userId: string) =>
+    request<void>("/api/users", { method: "DELETE" }),
 
-  // Roles
-  getRoles: () => request<Role[]>("/roles"),
+  // ── Roles ────────────────────────────────────────────────────────────────
+
+  getRoles: () => request<Role[]>("/api/roles"),
 
   createRole: (data: CreateRoleDTO) =>
-    request<Role>("/roles", {
+    request<Role>("/api/roles", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   updateRole: (roleId: number, data: UpdateRoleDTO) =>
-    request<Role>(`/roles/${roleId}`, {
+    request<Role>("/api/roles", {
       method: "PATCH",
-      body: JSON.stringify(data),
+      body: JSON.stringify({ id: roleId, ...data }),
     }),
 
   deleteRole: (roleId: number) =>
-    request<void>(`/roles/${roleId}`, { method: "DELETE" }),
-
-  // User Roles
-  getUserRoles: (userId: string) =>
-    request<UserSpecificRoles>("/userroles", {
-      method: "GET",
-      body: JSON.stringify({ userId }),
-    }),
-
-  assignRole: (userId: string, roleId: number) =>
-    request<void>("/userroles", {
-      method: "POST",
-      body: JSON.stringify({ userId, roleId }),
-    }),
-
-  removeRole: (userId: string, roleId: number) =>
-    request<void>("/userroles", {
+    request<void>("/api/roles", {
       method: "DELETE",
-      body: JSON.stringify({ userId, roleId }),
+      body: JSON.stringify({ id: roleId }),
     }),
 
-  // Permissions
-  // TODO: verify against backend — controllers are empty
-  getPermissions: () => request<Permission[]>("/permissions"),
+  // ── User Roles ───────────────────────────────────────────────────────────
 
-  getUserPermissions: (userId: string) =>
-    request<UserPermission[]>(`/userpermissions?userId=${userId}`),
+  getUserRoles: (_userId: string) =>
+    request<UserSpecificRoles>("/api/userroles"),
 
-  assignPermission: (userId: string, permissionId: number) =>
-    request<void>("/userpermissions", {
+  assignRole: (_userId: string, roleId: number) =>
+    request<void>(`/api/userroles/${roleId}`, { method: "POST" }),
+
+  removeRole: (_userId: string, roleId: number) =>
+    request<void>(`/api/userroles/${roleId}`, { method: "DELETE" }),
+
+  // ── Permissions ──────────────────────────────────────────────────────────
+
+  getPermissions: () => request<Permission[]>("/api/permissions"),
+
+  getUserPermissions: (_userId: string) =>
+    request<UserPermission[]>("/api/userroles/permissions").then(
+      (data: unknown) => {
+        const rolesData = data as {
+          userId: string;
+          roles: {
+            permissions: {
+              permissionId: string;
+              name: string;
+              description: string | null;
+            }[];
+          }[];
+        };
+        if (!rolesData?.roles) return [];
+        const perms: UserPermission[] = [];
+        for (const role of rolesData.roles) {
+          for (const p of role.permissions || []) {
+            perms.push({
+              id: p.permissionId,
+              user_id: rolesData.userId,
+              permission_id: Number(p.permissionId),
+              created_at: "",
+            });
+          }
+        }
+        return perms;
+      }
+    ),
+
+  assignPermission: (_userId: string, permissionId: number) =>
+    request<void>("/api/rolepermissions", {
       method: "POST",
-      body: JSON.stringify({ userId, permissionId }),
+      body: JSON.stringify({ permission_id: permissionId }),
     }),
 
-  removePermission: (userId: string, permissionId: number) =>
-    request<void>("/userpermissions", {
+  removePermission: (_userId: string, permissionId: number) =>
+    request<void>("/api/rolepermissions", {
       method: "DELETE",
-      body: JSON.stringify({ userId, permissionId }),
+      body: JSON.stringify({ id: permissionId }),
     }),
 
-  // Bookings
-  // TODO: verify against backend — controllers are empty
-  getBookings: () => request<Booking[]>("/bookings"),
+  // ── Bookings ─────────────────────────────────────────────────────────────
 
-  getBooking: (bookingId: string) => request<Booking>(`/bookings/${bookingId}`),
+  getBookings: () =>
+    request<unknown>("/api/bookings").then(bookingsFromBackend),
 
-  getMyBookings: () => request<Booking[]>("/bookings/mine"),
+  getAllBookings: () =>
+    request<unknown>("/api/bookings/all").then(bookingsFromBackend),
+
+  getBooking: async (bookingId: string) => {
+    const all = await request<unknown>("/api/bookings");
+    const bookings = bookingsFromBackend(all);
+    const found = bookings.find((b) => b.id === bookingId);
+    if (!found) throw new Error("Booking not found");
+    return found;
+  },
+
+  getMyBookings: () =>
+    request<unknown>("/api/bookings").then(bookingsFromBackend),
 
   createBooking: (data: CreateBookingDTO) =>
-    request<Booking>("/bookings", {
+    request<Record<string, unknown>>("/api/bookings", {
       method: "POST",
-      body: JSON.stringify(data),
-    }),
+      body: JSON.stringify(bookingToBackend(data)),
+    }).then(bookingFromBackend),
 
   updateBooking: (bookingId: string, data: UpdateBookingDTO) =>
-    request<Booking>(`/bookings/${bookingId}`, {
+    request<Record<string, unknown>>(`/api/bookings/${bookingId}`, {
       method: "PATCH",
-      body: JSON.stringify(data),
-    }),
+      body: JSON.stringify(bookingToBackend(data)),
+    }).then(bookingFromBackend),
 
-  // Payments
-  getPayments: () => request<Payment[]>("/payments"),
+  // ── Payments ─────────────────────────────────────────────────────────────
 
-  getAllPayments: () => request<Payment[]>("/payments/all"),
+  getPayments: () =>
+    request<unknown>("/api/payments").then(paymentsFromBackend),
 
-  getPayment: (paymentId: string) => request<Payment>(`/payments/${paymentId}`),
+  getAllPayments: () =>
+    request<unknown>("/api/payments/all").then(paymentsFromBackend),
 
-  initiateMpesa: (bookingId: string, amount: number, phoneNumber: string) =>
-    request<InitiatePaymentResponse>("/payments/mpesa/initiate", {
+  getPayment: (paymentId: string) =>
+    request<Record<string, unknown>>(`/api/payments/${paymentId}`).then(
+      paymentFromBackend
+    ),
+
+  initiateMpesa: (
+    bookingId: string,
+    amount: number,
+    phoneNumber: string
+  ) =>
+    request<InitiatePaymentResponse>("/api/payments/mpesa/initiate", {
       method: "POST",
-      body: JSON.stringify({ booking_id: bookingId, amount, phone_number: phoneNumber }),
+      body: JSON.stringify({
+        booking_id: bookingId,
+        amount,
+        phone_number: phoneNumber,
+      }),
     }),
 
   initiateStripe: (data: StripeInitiateDTO) =>
-    request<StripeInitiateResponse>("/payments/stripe/initiate", {
+    request<StripeInitiateResponse>("/api/payments/stripe/initiate", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   deletePayment: (paymentId: string) =>
-    request<void>(`/payments/${paymentId}`, { method: "DELETE" }),
+    request<void>(`/api/payments/${paymentId}`, { method: "DELETE" }),
 
-  // Ratings
-  // TODO: verify against backend — controllers are empty
-  getRatings: () => request<Rating[]>("/ratings"),
+  // ── Ratings ──────────────────────────────────────────────────────────────
 
-  createRating: (data: CreateRatingDTO) =>
-    request<Rating>("/ratings", {
+  getRatings: () => request<Rating[]>("/api/ratings/all"),
+
+  getAllRatings: () => request<Rating[]>("/api/ratings/all"),
+
+  createRating: (data: CreateRatingDTO) => {
+    const { booking_id, ...rest } = data;
+    return request<Rating>(`/api/ratings/${booking_id}`, {
       method: "POST",
-      body: JSON.stringify(data),
-    }),
+      body: JSON.stringify(rest),
+    });
+  },
 
-  // Refunds
-  // TODO: verify against backend — controllers are empty
-  getRefunds: () => request<Refund[]>("/refunds"),
+  // ── Refunds ──────────────────────────────────────────────────────────────
 
-  createRefund: (data: CreateRefundDTO) =>
-    request<Refund>("/refunds", {
+  getRefunds: () => request<Refund[]>("/api/refunds"),
+
+  getAllRefunds: () => request<Refund[]>("/api/refunds/all"),
+
+  createRefund: (data: CreateRefundDTO) => {
+    const { booking_id, ...rest } = data;
+    return request<Refund>(`/api/refunds/${booking_id}`, {
       method: "POST",
-      body: JSON.stringify(data),
-    }),
+      body: JSON.stringify(rest),
+    });
+  },
 
   updateRefund: (refundId: string, data: UpdateRefundDTO) =>
-    request<Refund>(`/refunds/${refundId}`, {
+    request<Refund>(`/api/refunds/${refundId}`, {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
 
-  // Feedback
-  // TODO: verify against backend — controllers are empty
-  getFeedback: () => request<Feedback[]>("/feedback"),
+  // ── Feedback ─────────────────────────────────────────────────────────────
+
+  getFeedback: () => request<Feedback[]>("/api/feedback"),
+
+  getAllFeedback: () => request<Feedback[]>("/api/feedback/all"),
 
   createFeedback: (data: CreateFeedbackDTO) =>
-    request<Feedback>("/feedback", {
+    request<Feedback>("/api/feedback", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
-  // Analytics
-  // TODO: verify against backend — controllers are empty
-  getAnalytics: () => request<Analytic[]>("/analytics"),
+  // ── Analytics (not implemented on backend — stubs) ───────────────────────
 
-  getDashboardSummary: () => request<DashboardSummary>("/analytics/summary"),
+  getAnalytics: (): Promise<Analytic[]> => Promise.resolve([]),
 
-  getMonthlyReports: () => request<MonthlyReport[]>("/analytics/monthly"),
+  getDashboardSummary: (): Promise<DashboardSummary> =>
+    Promise.resolve({
+      tripsCompleted: 0,
+      clientsServed: 0,
+      revenue: 0,
+      repeatClients: 0,
+    }),
+
+  getMonthlyReports: (): Promise<MonthlyReport[]> => Promise.resolve([]),
 };

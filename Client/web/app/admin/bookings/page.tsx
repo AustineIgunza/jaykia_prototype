@@ -69,7 +69,7 @@ export default function AdminBookingsPage() {
 
   useEffect(() => {
     if (!api) return;
-    api.getBookings().then(setBookings).finally(() => setLoading(false));
+    api.getAllBookings().then(setBookings).finally(() => setLoading(false));
   }, [api]);
 
   const filtered = bookings.filter((b) => {

@@ -75,6 +75,7 @@ export interface ApiClient {
 
   // Bookings
   getBookings(): Promise<Booking[]>;
+  getAllBookings(): Promise<Booking[]>;
   getBooking(bookingId: string): Promise<Booking>;
   getMyBookings(): Promise<Booking[]>;
   createBooking(data: CreateBookingDTO): Promise<Booking>;
@@ -90,15 +91,18 @@ export interface ApiClient {
 
   // Ratings
   getRatings(): Promise<Rating[]>;
+  getAllRatings(): Promise<Rating[]>;
   createRating(data: CreateRatingDTO): Promise<Rating>;
 
   // Refunds
   getRefunds(): Promise<Refund[]>;
+  getAllRefunds(): Promise<Refund[]>;
   createRefund(data: CreateRefundDTO): Promise<Refund>;
   updateRefund(refundId: string, data: UpdateRefundDTO): Promise<Refund>;
 
   // Feedback
   getFeedback(): Promise<Feedback[]>;
+  getAllFeedback(): Promise<Feedback[]>;
   createFeedback(data: CreateFeedbackDTO): Promise<Feedback>;
 
   // Analytics

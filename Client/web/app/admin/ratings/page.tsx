@@ -24,7 +24,7 @@ export default function AdminRatingsPage() {
 
   useEffect(() => {
     if (!api) return;
-    api.getRatings().then(setRatings).finally(() => setLoading(false));
+    api.getAllRatings().then(setRatings).finally(() => setLoading(false));
   }, [api]);
 
   if (loading) return <SkeletonTable rows={5} />;

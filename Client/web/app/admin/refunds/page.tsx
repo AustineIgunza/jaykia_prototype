@@ -25,7 +25,7 @@ export default function AdminRefundsPage() {
 
   useEffect(() => {
     if (!api) return;
-    api.getRefunds().then(setRefunds).finally(() => setLoading(false));
+    api.getAllRefunds().then(setRefunds).finally(() => setLoading(false));
   }, [api]);
 
   async function handleAction(refundId: string, approved: "accepted" | "rejected") {

@@ -75,7 +75,7 @@ const twoFactorEnabled = new Set<string>();
 // Build a fake JWT-shaped token so parseJwtPayload can extract userId
 function makeFakeToken(userId: string): string {
   const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const payload = btoa(JSON.stringify({ userId, exp: 9999999999 }));
+  const payload = btoa(JSON.stringify({ id: userId, userId, exp: 9999999999 }));
   return `${header}.${payload}.mock`;
 }
 
@@ -283,6 +283,11 @@ export const mockClient: ApiClient = {
   // Bookings
   async getBookings(): Promise<Booking[]> {
     await delay();
+    return bookings.filter((b) => b.user_id === currentUserId);
+  },
+
+  async getAllBookings(): Promise<Booking[]> {
+    await delay();
     return bookings;
   },
 
@@ -397,6 +402,11 @@ export const mockClient: ApiClient = {
     return ratings;
   },
 
+  async getAllRatings(): Promise<Rating[]> {
+    await delay();
+    return ratings;
+  },
+
   async createRating(data: CreateRatingDTO): Promise<Rating> {
     await delay();
     const rating: Rating = {
@@ -412,6 +422,11 @@ export const mockClient: ApiClient = {
 
   // Refunds
   async getRefunds(): Promise<Refund[]> {
+    await delay();
+    return refunds;
+  },
+
+  async getAllRefunds(): Promise<Refund[]> {
     await delay();
     return refunds;
   },
@@ -441,6 +456,11 @@ export const mockClient: ApiClient = {
 
   // Feedback
   async getFeedback(): Promise<Feedback[]> {
+    await delay();
+    return feedback;
+  },
+
+  async getAllFeedback(): Promise<Feedback[]> {
     await delay();
     return feedback;
   },

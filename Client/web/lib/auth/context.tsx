@@ -56,16 +56,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!token) return;
 
       const payload = parseJwtPayload(token);
-      if (!payload || typeof payload.userId !== "string") {
+      const userId =
+        (payload?.id as string) ?? (payload?.userId as string) ?? null;
+      if (!userId) {
         clearTokens();
         return;
       }
 
       try {
         const api = await getApiClient();
-        const data = await api.getUserRoles(payload.userId);
+        const data = await api.getUserRoles(userId);
         if (!cancelled) {
-          setUser({ id: payload.userId, roles: data.roles });
+          setUser({ id: userId, roles: data.roles });
         }
       } catch {
         clearTokens();
@@ -82,7 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleAuthResponse = useCallback(async (res: AuthResponse): Promise<User> => {
     setTokens(res.accessToken, res.refreshToken);
     const payload = parseJwtPayload(res.accessToken);
-    const userId = (payload?.userId as string) || "unknown";
+    const userId =
+      (payload?.id as string) ?? (payload?.userId as string) ?? "unknown";
     const api = await getApiClient();
     const rolesData = await api.getUserRoles(userId);
     const newUser: User = { id: userId, roles: rolesData.roles };

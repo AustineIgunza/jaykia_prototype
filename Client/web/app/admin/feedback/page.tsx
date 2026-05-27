@@ -23,7 +23,7 @@ export default function AdminFeedbackPage() {
 
   useEffect(() => {
     if (!api) return;
-    api.getFeedback().then(setFeedback).finally(() => setLoading(false));
+    api.getAllFeedback().then(setFeedback).finally(() => setLoading(false));
   }, [api]);
 
   if (loading) return <SkeletonTable rows={4} />;
