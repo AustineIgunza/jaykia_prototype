@@ -22,8 +22,8 @@ import type {
   CreateBookingDTO,
   UpdateBookingDTO,
   Payment,
-  StripeInitiateDTO,
-  StripeInitiateResponse,
+  PaystackInitiateDTO,
+  PaystackInitiateResponse,
   InitiatePaymentResponse,
   Rating,
   CreateRatingDTO,
@@ -79,8 +79,9 @@ function makeFakeToken(userId: string): string {
   return `${header}.${payload}.mock`;
 }
 
-// Admin mock credentials: admin@jaykia.co.ke / any password
 const ADMIN_EMAIL = "admin@jaykia.co.ke";
+const MANAGER_EMAIL = "manager@jaykia.co.ke";
+const SUPPORT_EMAIL = "support@jaykia.co.ke";
 
 export const mockClient: ApiClient = {
   // Auth
@@ -103,9 +104,13 @@ export const mockClient: ApiClient = {
 
   async login(details: LegacyLoginDetails): Promise<AuthResponse> {
     await delay();
-    // admin@jaykia.co.ke → admin user, anything else → regular customer
-    if (details.email.toLowerCase() === ADMIN_EMAIL) {
+    const email = details.email.toLowerCase();
+    if (email === ADMIN_EMAIL) {
       currentUserId = "u-admin";
+    } else if (email === MANAGER_EMAIL) {
+      currentUserId = "u-manager";
+    } else if (email === SUPPORT_EMAIL) {
+      currentUserId = "u-support";
     } else {
       currentUserId = "u-001";
     }
@@ -238,6 +243,8 @@ export const mockClient: ApiClient = {
   async getUserRoles(userId: string): Promise<UserSpecificRoles> {
     await delay();
     if (userId === "u-admin") return { userId, roles: ["admin"] };
+    if (userId === "u-manager") return { userId, roles: ["manager"] };
+    if (userId === "u-support") return { userId, roles: ["support"] };
     return { userId, roles: ["customer"] };
   },
 
@@ -369,25 +376,26 @@ export const mockClient: ApiClient = {
     return { message: "STK push sent", paymentId: id };
   },
 
-  async initiateStripe(data: StripeInitiateDTO): Promise<StripeInitiateResponse> {
+  async initiatePaystack(data: PaystackInitiateDTO): Promise<PaystackInitiateResponse> {
     await delay();
     const id = `p-${uid()}`;
+    const ref = `pstk_${uid()}`;
     const now = new Date().toISOString();
     const payment: Payment = {
       id,
       user_id: currentUserId,
       booking_id: data.booking_id,
       amount: data.amount,
-      payment_method: "bank",
+      payment_method: "paystack",
       payment_status: "paid",
       phone_number: null,
-      transaction_reference: `pi_${uid()}`,
+      transaction_reference: ref,
       paid_at: now,
       created_at: now,
       updated_at: now,
     };
     payments.push(payment);
-    return { message: "Payment succeeded", paymentId: id, stripeStatus: "succeeded" };
+    return { message: "Payment initiated", paymentId: id, reference: ref };
   },
 
   async deletePayment(paymentId: string): Promise<void> {

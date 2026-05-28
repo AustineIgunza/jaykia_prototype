@@ -194,7 +194,7 @@ export interface UpdateBookingDTO {
 
 // ─── Payments ───
 
-export type PaymentMethod = "m-pesa" | "mpesa" | "bank";
+export type PaymentMethod = "m-pesa" | "mpesa" | "paystack";
 export type PaymentStatus = "paid" | "pending" | "cancelled" | "failed";
 
 export interface Payment {
@@ -218,18 +218,18 @@ export interface CreatePaymentDTO {
   phone_number?: string;
 }
 
-export interface StripeInitiateDTO {
+export interface PaystackInitiateDTO {
   booking_id: string;
   amount: number;
-  payment_method_id: string;
-  email?: string;
+  email: string;
 }
 
-export interface StripeInitiateResponse {
+export interface PaystackInitiateResponse {
   message: string;
   paymentId: string;
-  clientSecret?: string;
-  stripeStatus: string;
+  authorization_url?: string;
+  access_code?: string;
+  reference: string;
 }
 
 export interface InitiatePaymentResponse {

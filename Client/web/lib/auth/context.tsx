@@ -16,6 +16,7 @@ import {
 } from "./token";
 import { getApiClient } from "@/lib/api/client";
 import type { AuthResponse, LegacyLoginDetails, LegacySignupDetails } from "@/lib/api/types";
+import { getRoleTier, isStaffTier, type RoleTier } from "./roles";
 
 interface User {
   id: string;
@@ -38,7 +39,9 @@ interface AuthContextValue {
   register: (details: LegacySignupDetails) => Promise<User>;
   verify2FA: (tempToken: string, code: string) => Promise<User>;
   logout: () => void;
+  roleTier: RoleTier;
   isAdmin: boolean;
+  isStaff: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -128,10 +131,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  const isAdmin = user?.roles.includes("admin") ?? false;
+  const roleTier = getRoleTier(user?.roles ?? []);
+  const isAdmin = roleTier === "admin";
+  const isStaff = isStaffTier(roleTier);
 
   return (
-    <AuthContext value={{ user, loading, login, register, verify2FA, logout, isAdmin }}>
+    <AuthContext value={{ user, loading, login, register, verify2FA, logout, roleTier, isAdmin, isStaff }}>
       {children}
     </AuthContext>
   );

@@ -11,10 +11,15 @@ import { GoldDivider } from "@/components/ui/gold-divider";
 import { SkeletonTable } from "@/components/ui/skeleton";
 import { FadeIn } from "@/components/motion";
 import { useApi } from "@/lib/api/use-api";
+import { useAuth } from "@/lib/auth/context";
 import type { PublicUserDTO, Role, UserSpecificRoles } from "@/lib/api/types";
 
 export default function AdminUsersPage() {
   const api = useApi();
+  const { roleTier } = useAuth();
+  const canManage = roleTier === "admin" || roleTier === "manager";
+  const canFlag = roleTier === "admin" || roleTier === "manager";
+  const canDelete = roleTier === "admin";
   const [users, setUsers] = useState<PublicUserDTO[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
@@ -203,16 +208,18 @@ export default function AdminUsersPage() {
                     <TableCell>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="sm" onClick={() => openUserDetail(u)}>
-                          Manage
+                          {canManage ? "Manage" : "View"}
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setFlagUser(u)}
-                          title="Flag user"
-                        >
-                          Flag
-                        </Button>
+                        {canFlag && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setFlagUser(u)}
+                            title="Flag user"
+                          >
+                            Flag
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -269,13 +276,15 @@ export default function AdminUsersPage() {
                     className="inline-flex items-center gap-1 bg-accent/10 text-accent text-xs px-2.5 py-1 rounded-full"
                   >
                     {roleName}
-                    <button
-                      className="hover:text-error transition-colors cursor-pointer ml-1"
-                      onClick={() => removeRole(roleName)}
-                      aria-label={`Remove ${roleName} role`}
-                    >
-                      &times;
-                    </button>
+                    {canManage && (
+                      <button
+                        className="hover:text-error transition-colors cursor-pointer ml-1"
+                        onClick={() => removeRole(roleName)}
+                        aria-label={`Remove ${roleName} role`}
+                      >
+                        &times;
+                      </button>
+                    )}
                   </span>
                 ))}
               </div>
@@ -283,56 +292,64 @@ export default function AdminUsersPage() {
               <p className="text-xs text-muted">No roles assigned.</p>
             )}
 
-            <div className="flex gap-2 items-end">
-              <div className="flex-1">
-                <Select
-                  label="Assign Role"
-                  options={[
-                    { value: "", label: "Select a role..." },
-                    ...roles.map((r) => ({ value: String(r.id), label: `${r.name} — ${r.description}` })),
-                  ]}
-                  value={selectedRoleId}
-                  onChange={(e) => setSelectedRoleId(e.target.value)}
-                />
-              </div>
-              <Button
-                size="sm"
-                loading={roleLoading}
-                disabled={!selectedRoleId}
-                onClick={assignRole}
-              >
-                Assign
-              </Button>
-            </div>
-
-            <GoldDivider className="my-4" />
-
-            {/* Danger zone */}
-            <div className="p-3 rounded-[var(--radius-md)] border border-red-500/20 bg-red-500/5">
-              <p className="text-xs text-red-400 uppercase tracking-wider mb-3">Danger Zone</p>
-              <div className="flex gap-2">
+            {canManage && (
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <Select
+                    label="Assign Role"
+                    options={[
+                      { value: "", label: "Select a role..." },
+                      ...roles.map((r) => ({ value: String(r.id), label: `${r.name} — ${r.description}` })),
+                    ]}
+                    value={selectedRoleId}
+                    onChange={(e) => setSelectedRoleId(e.target.value)}
+                  />
+                </div>
                 <Button
-                  variant="danger"
                   size="sm"
-                  onClick={() => {
-                    setDeleteUser(selectedUser);
-                    setSelectedUser(null);
-                  }}
+                  loading={roleLoading}
+                  disabled={!selectedRoleId}
+                  onClick={assignRole}
                 >
-                  Delete User
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setFlagUser(selectedUser);
-                    setSelectedUser(null);
-                  }}
-                >
-                  Flag User
+                  Assign
                 </Button>
               </div>
-            </div>
+            )}
+
+            {(canFlag || canDelete) && (
+              <>
+                <GoldDivider className="my-4" />
+                <div className="p-3 rounded-[var(--radius-md)] border border-red-500/20 bg-red-500/5">
+                  <p className="text-xs text-red-400 uppercase tracking-wider mb-3">Danger Zone</p>
+                  <div className="flex gap-2">
+                    {canDelete && (
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => {
+                          setDeleteUser(selectedUser);
+                          setSelectedUser(null);
+                        }}
+                      >
+                        Delete User
+                      </Button>
+                    )}
+                    {canFlag && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setFlagUser(selectedUser);
+                          setSelectedUser(null);
+                        }}
+                      >
+                        Flag User
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
       </Modal>

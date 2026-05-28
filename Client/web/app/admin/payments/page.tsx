@@ -10,6 +10,7 @@ import { SkeletonTable } from "@/components/ui/skeleton";
 import { Modal } from "@/components/ui/modal";
 import { FadeIn } from "@/components/motion";
 import { useApi } from "@/lib/api/use-api";
+import { useAuth } from "@/lib/auth/context";
 import type { Payment } from "@/lib/api/types";
 
 interface PaymentMethodInfo {
@@ -27,9 +28,9 @@ const DEFAULT_METHODS: PaymentMethodInfo[] = [
     enabled: true,
   },
   {
-    id: "bank",
-    name: "Bank Transfer",
-    details: "Bank: Kenya Commercial Bank (KCB)\nAccount Name: JayKia Executive Transfers Ltd\nAccount Number: TBD\nBranch: Westlands, Nairobi",
+    id: "paystack",
+    name: "Paystack (Card/Bank)",
+    details: "Pay securely via Paystack.\nAccepts Visa, Mastercard, and bank transfers.",
     enabled: true,
   },
   {
@@ -58,6 +59,9 @@ function saveMethods(methods: PaymentMethodInfo[]) {
 
 export default function AdminPaymentsPage() {
   const api = useApi();
+  const { roleTier } = useAuth();
+  const canDelete = roleTier === "admin";
+  const canConfig = roleTier === "admin";
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -128,30 +132,39 @@ export default function AdminPaymentsPage() {
               <CardContent>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold">{method.name}</h3>
-                  <button
-                    onClick={() => toggleMethod(method.id)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
-                      method.enabled ? "bg-accent" : "bg-border"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        method.enabled ? "translate-x-6" : "translate-x-1"
+                  {canConfig && (
+                    <button
+                      onClick={() => toggleMethod(method.id)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
+                        method.enabled ? "bg-accent" : "bg-border"
                       }`}
-                    />
-                  </button>
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          method.enabled ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  )}
+                  {!canConfig && (
+                    <StatusBadge variant={method.enabled ? "success" : "error"}>
+                      {method.enabled ? "Active" : "Disabled"}
+                    </StatusBadge>
+                  )}
                 </div>
                 <pre className="text-xs text-muted whitespace-pre-wrap mb-3">{method.details}</pre>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setEditingMethod(method);
-                    setEditDetails(method.details);
-                  }}
-                >
-                  Edit Details
-                </Button>
+                {canConfig && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setEditingMethod(method);
+                      setEditDetails(method.details);
+                    }}
+                  >
+                    Edit Details
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -210,11 +223,13 @@ export default function AdminPaymentsPage() {
                     <TableCell className="text-xs">
                       {new Date(p.created_at).toLocaleString()}
                     </TableCell>
-                    <TableCell>
-                      <Button variant="danger" size="sm" onClick={() => handleDelete(p.id)}>
-                        Delete
-                      </Button>
-                    </TableCell>
+                    {canDelete && (
+                      <TableCell>
+                        <Button variant="danger" size="sm" onClick={() => handleDelete(p.id)}>
+                          Delete
+                        </Button>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}

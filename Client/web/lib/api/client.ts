@@ -21,8 +21,8 @@ import type {
   CreateBookingDTO,
   UpdateBookingDTO,
   Payment,
-  StripeInitiateDTO,
-  StripeInitiateResponse,
+  PaystackInitiateDTO,
+  PaystackInitiateResponse,
   InitiatePaymentResponse,
   Rating,
   CreateRatingDTO,
@@ -86,7 +86,7 @@ export interface ApiClient {
   getAllPayments(): Promise<Payment[]>;
   getPayment(paymentId: string): Promise<Payment>;
   initiateMpesa(bookingId: string, amount: number, phoneNumber: string): Promise<InitiatePaymentResponse>;
-  initiateStripe(data: StripeInitiateDTO): Promise<StripeInitiateResponse>;
+  initiatePaystack(data: PaystackInitiateDTO): Promise<PaystackInitiateResponse>;
   deletePayment(paymentId: string): Promise<void>;
 
   // Ratings

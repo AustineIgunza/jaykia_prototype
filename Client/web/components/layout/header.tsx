@@ -15,7 +15,7 @@ const navLinks = [
 
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { user, loading, logout, isAdmin } = useAuth();
+  const { user, loading, logout, isStaff } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -62,10 +62,10 @@ function Header() {
             <div className="w-20 h-8" />
           ) : user ? (
             <>
-              {isAdmin && (
+              {isStaff && (
                 <Link href="/admin">
                   <Button variant="ghost" size="sm">
-                    Admin
+                    Dashboard
                   </Button>
                 </Link>
               )}
@@ -131,10 +131,10 @@ function Header() {
             <div className="flex flex-col gap-2">
               {loading ? null : user ? (
                 <>
-                  {isAdmin && (
+                  {isStaff && (
                     <Link href="/admin" onClick={() => setMenuOpen(false)}>
                       <Button variant="ghost" size="sm" className="w-full">
-                        Admin Dashboard
+                        Dashboard
                       </Button>
                     </Link>
                   )}

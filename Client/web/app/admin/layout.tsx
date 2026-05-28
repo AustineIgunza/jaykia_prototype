@@ -6,29 +6,27 @@ import Link from "next/link";
 import { AuthProvider, useAuth } from "@/lib/auth/context";
 import { Button } from "@/components/ui/button";
 import { AnimatedBg } from "@/components/ui/animated-bg";
-
-const sidebarLinks = [
-  { href: "/admin", label: "Overview", icon: "\u{1F4CA}" },
-  { href: "/admin/bookings", label: "Bookings", icon: "\u{1F4CB}" },
-  { href: "/admin/drivers", label: "Drivers", icon: "\u{1F698}" },
-  { href: "/admin/payments", label: "Payments", icon: "\u{1F4B3}" },
-  { href: "/admin/refunds", label: "Refunds", icon: "\u21A9" },
-  { href: "/admin/ratings", label: "Ratings", icon: "\u2B50" },
-  { href: "/admin/feedback", label: "Feedback", icon: "\u{1F4AC}" },
-  { href: "/admin/users", label: "Users & Roles", icon: "\u{1F465}" },
-];
+import { SIDEBAR_LINKS, DASHBOARD_TITLE, canAccessRoute, getDefaultRoute } from "@/lib/auth/roles";
 
 function AdminGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading, isAdmin, logout } = useAuth();
+  const { user, loading, isStaff, roleTier, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const sidebarLinks = SIDEBAR_LINKS[roleTier];
+
   useEffect(() => {
-    if (!loading && (!user || !isAdmin)) {
+    if (!loading && (!user || !isStaff)) {
       router.push("/auth/login");
     }
-  }, [loading, user, isAdmin, router]);
+  }, [loading, user, isStaff, router]);
+
+  useEffect(() => {
+    if (!loading && user && isStaff && !canAccessRoute(roleTier, pathname)) {
+      router.push(getDefaultRoute(roleTier));
+    }
+  }, [loading, user, isStaff, roleTier, pathname, router]);
 
   // Close menu on route change
   useEffect(() => {
@@ -43,12 +41,12 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user || !isAdmin) {
+  if (!user || !isStaff) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center">
           <h1 className="font-display text-2xl font-bold mb-2">Access Denied</h1>
-          <p className="text-muted mb-4">You need admin privileges to access this area.</p>
+          <p className="text-muted mb-4">You need staff privileges to access this area.</p>
           <Button onClick={() => router.push("/auth/login")}>Sign In</Button>
         </div>
       </div>
@@ -64,7 +62,7 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
         <div className="p-6 border-b border-border">
           <Link href="/admin">
             <span className="font-display text-xl font-bold text-accent">JayKia</span>
-            <span className="text-xs text-muted block mt-0.5">Admin Dashboard</span>
+            <span className="text-xs text-muted block mt-0.5">{DASHBOARD_TITLE[roleTier]}</span>
           </Link>
         </div>
         <nav className="flex-1 p-3 space-y-1">

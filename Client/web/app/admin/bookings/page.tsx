@@ -11,6 +11,7 @@ import { GoldDivider } from "@/components/ui/gold-divider";
 import { SkeletonTable } from "@/components/ui/skeleton";
 import { FadeIn } from "@/components/motion";
 import { useApi } from "@/lib/api/use-api";
+import { useAuth } from "@/lib/auth/context";
 import type { Booking, TripStatus } from "@/lib/api/types";
 import type { BadgeVariant } from "@/components/ui/status-badge";
 
@@ -49,6 +50,8 @@ function buildClientWhatsAppUrl(booking: Booking) {
 
 export default function AdminBookingsPage() {
   const api = useApi();
+  const { roleTier } = useAuth();
+  const canModify = roleTier === "admin";
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -312,22 +315,26 @@ export default function AdminBookingsPage() {
 
             {!selected.cancelled && (
               <>
-                <Select
-                  label="Update Status"
-                  options={[
-                    { value: "pending", label: "Pending" },
-                    { value: "ongoing", label: "Ongoing" },
-                    { value: "complete", label: "Complete" },
-                  ]}
-                  value={newStatus}
-                  onChange={(e) => setNewStatus(e.target.value as TripStatus)}
-                />
+                {canModify && (
+                  <Select
+                    label="Update Status"
+                    options={[
+                      { value: "pending", label: "Pending" },
+                      { value: "ongoing", label: "Ongoing" },
+                      { value: "complete", label: "Complete" },
+                    ]}
+                    value={newStatus}
+                    onChange={(e) => setNewStatus(e.target.value as TripStatus)}
+                  />
+                )}
 
                 <div className="flex flex-wrap gap-2">
-                  <Button loading={updating} onClick={handleStatusUpdate}>
-                    Update Status
-                  </Button>
-                  {selected.trip_status === "pending" && (
+                  {canModify && (
+                    <Button loading={updating} onClick={handleStatusUpdate}>
+                      Update Status
+                    </Button>
+                  )}
+                  {canModify && selected.trip_status === "pending" && (
                     <Button
                       variant="outline"
                       onClick={() => {
@@ -351,15 +358,17 @@ export default function AdminBookingsPage() {
                       WhatsApp Client
                     </a>
                   )}
-                  <Button
-                    variant="danger"
-                    onClick={() => {
-                      setCancelBooking(selected);
-                      setSelected(null);
-                    }}
-                  >
-                    Cancel Booking
-                  </Button>
+                  {canModify && (
+                    <Button
+                      variant="danger"
+                      onClick={() => {
+                        setCancelBooking(selected);
+                        setSelected(null);
+                      }}
+                    >
+                      Cancel Booking
+                    </Button>
+                  )}
                 </div>
               </>
             )}

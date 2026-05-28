@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { FadeIn } from "@/components/motion";
 import { useAuth, TwoFactorRequiredError } from "@/lib/auth/context";
+import { getRoleTier } from "@/lib/auth/roles";
 
 export default function LoginPage() {
   const { login, verify2FA } = useAuth();
@@ -36,7 +37,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const loggedInUser = await login({ email, password });
-      router.push(loggedInUser.roles.includes("admin") ? "/admin" : "/auth/account");
+      const tier = getRoleTier(loggedInUser.roles);
+      router.push(tier === "customer" ? "/auth/account" : "/admin");
     } catch (err) {
       if (err instanceof TwoFactorRequiredError) {
         setTempToken(err.tempToken);
@@ -59,7 +61,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const loggedInUser = await verify2FA(tempToken, code);
-      router.push(loggedInUser.roles.includes("admin") ? "/admin" : "/auth/account");
+      const tier = getRoleTier(loggedInUser.roles);
+      router.push(tier === "customer" ? "/auth/account" : "/admin");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid code");
       setOtpDigits(["", "", "", "", "", ""]);

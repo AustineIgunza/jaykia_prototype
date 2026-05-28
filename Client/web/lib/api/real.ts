@@ -23,8 +23,8 @@ import type {
   CreateBookingDTO,
   UpdateBookingDTO,
   Payment,
-  StripeInitiateDTO,
-  StripeInitiateResponse,
+  PaystackInitiateDTO,
+  PaystackInitiateResponse,
   InitiatePaymentResponse,
   Rating,
   CreateRatingDTO,
@@ -94,7 +94,9 @@ function bookingsFromBackend(raw: unknown): Booking[] {
 }
 
 function paymentMethodFromBackend(m: string): PaymentMethod {
-  return m === "mpesa" ? "m-pesa" : (m as PaymentMethod);
+  if (m === "mpesa") return "m-pesa";
+  if (m === "bank" || m === "paystack") return "paystack";
+  return m as PaymentMethod;
 }
 
 function paymentFromBackend(raw: Record<string, unknown>): Payment {
@@ -330,11 +332,10 @@ export const realClient: ApiClient = {
       }),
     }),
 
-  initiateStripe: (data: StripeInitiateDTO) =>
-    request<StripeInitiateResponse>("/api/payments/stripe/initiate", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+  // Backend currently exposes Stripe + M-Pesa only. Paystack endpoint does not
+  // exist server-side yet; stub here to avoid 404s. UI keeps Paystack branding.
+  initiatePaystack: (_data: PaystackInitiateDTO): Promise<PaystackInitiateResponse> =>
+    Promise.reject(new Error("Paystack is not available on this server")),
 
   deletePayment: (paymentId: string) =>
     request<void>(`/api/payments/${paymentId}`, { method: "DELETE" }),
