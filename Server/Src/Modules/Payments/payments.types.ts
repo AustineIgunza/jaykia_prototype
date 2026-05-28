@@ -1,124 +1,59 @@
-// ─── Core Payment Entity ──────────────────────────────────────────────────────
+import type { PayStackInitializor } from "./Paystack/paystack.types.js";
 
-export type PaymentMethod = "mpesa" | "bank";
-export type PaymentStatus = "paid" | "pending" | "cancelled" | "failed";
+export type PaymentMethods = "mobile" | "bank";
+export type PaymentStatus = "pending" | "paid" | "failed";
+export type QuoteType = "payment" | "invoice";
 
 export type Payment = {
   id: string;
   user_id: string;
   booking_id: string;
-  amount: number;
-  payment_method: PaymentMethod;
+  amount: number | string;
+  payment_method: PaymentMethods;
   payment_status: PaymentStatus;
-  /**
-   * M-Pesa  → MerchantRequestID during initiation, MpesaReceiptNumber on success
-   * Stripe  → PaymentIntent ID (pi_xxx) throughout the lifecycle
-   */
-  transaction_reference: string | null;
-  phone_number: string | null;
-  paid_at: string | null;
-  created_at: string;
-  updated_at: string;
+  transaction_reference: string;
+  paid_at: string;
 };
 
-// ─── DTOs ─────────────────────────────────────────────────────────────────────
-
-export type CreatePaymentDTO = {
-  user_id: string;
-  booking_id: string;
+export type createPaymentDTO = {
+  bookingId: string;
+  quoteType: QuoteType;
+  referenceId: string;
   amount: number;
-  payment_method: PaymentMethod;
-  phone_number?: string;
+  paymentStatus: PaymentStatus;
 };
-
-export type UpdatePaymentDTO = {
-  payment_status?: PaymentStatus;
-  transaction_reference?: string;
-  paid_at?: string;
+export type updatePaymentDTO = {
+  bookingId: string;
+  payment_status: string;
 };
-
-// ─── M-Pesa specific types ────────────────────────────────────────────────────
-
-export type MpesaStkPushResponse = {
-  MerchantRequestID: string;
-  CheckoutRequestID: string;
-  ResponseCode: string;
-  ResponseDescription: string;
-  CustomerMessage: string;
-};
-
-export type MpesaCallbackMetaItem = {
-  Name: string;
-  Value?: string | number;
-};
-
-export type MpesaCallbackBody = {
-  Body: {
-    stkCallback: {
-      MerchantRequestID: string;
-      CheckoutRequestID: string;
-      ResultCode: number;
-      ResultDesc: string;
-      CallbackMetadata?: {
-        Item: MpesaCallbackMetaItem[];
-      };
-    };
-  };
-};
-
-// ─── Stripe specific types ────────────────────────────────────────────────────
-
-export type StripeInitiateDTO = {
-  booking_id: string;
-  amount: number;
-  /** Stripe PaymentMethod ID (pm_xxx) collected on the frontend via Stripe.js */
-  payment_method_id: string;
-  /** Optional: customer email for Stripe receipts */
-  email?: string;
-};
-
-export type StripeInitiateResponse = {
-  message: string;
-  paymentId: string;
-  /** Pass back to frontend — only present when 3DS confirmation is needed */
-  clientSecret?: string;
-  /** "succeeded" | "requires_action" | "requires_payment_method" */
-  stripeStatus: string;
-};
-
-/**
- * Minimal shape of a Stripe webhook Event.
- * Install @types/stripe or the stripe npm package for the full type.
- */
-export type StripeWebhookEvent = {
-  id: string;
-  type: string;
-  data: {
-    object: {
-      id: string; // PaymentIntent ID  (pi_xxx)
-      status: string; // "succeeded" | "payment_failed" | …
-      amount: number; // in smallest currency unit (cents)
-      metadata: Record<string, string>; // we store paymentId here
-      latest_charge?: string; // charge ID if needed for receipts
-    };
-  };
-};
-
-// ─── Shared response ──────────────────────────────────────────────────────────
-
-export type InitiatePaymentResponse = {
-  message: string;
-  paymentId: string;
-};
-
-// ─── Repository Interface ─────────────────────────────────────────────────────
 
 export interface PaymentRepository {
-  createPayment: (data: CreatePaymentDTO) => Promise<Payment>;
-  editPayment: (paymentId: string, data: UpdatePaymentDTO) => Promise<Payment>;
-  getPaymentByReference: (ref: string) => Promise<Payment | null>;
-  getPaymentById: (id: string) => Promise<Payment | null>;
-  getUserPayments: (userId: string) => Promise<Payment[]>;
-  getAllPayments: () => Promise<Payment[]>;
-  deletePayment: (userId: string, paymentId: string) => Promise<void>;
+  initializePayment: (
+    userId: string,
+    paymentDetails: createPaymentDTO,
+  ) => Promise<Payment>;
+  updatePayment: (
+    userId: string,
+    reference: string,
+    newPaymentDetails: updatePaymentDTO,
+  ) => Promise<any>;
+  getUserTransactions: (userId: string) => Promise<Payment[]>;
+}
+export interface PaymentService {
+  initializeTransaction: (
+    userId: string,
+    bookingId: string,
+    amount: number,
+  ) => Promise<PayStackInitializor>;
+  initializeInvoice: (
+    userId: string,
+    bookingId: string,
+    amount: number,
+  ) => Promise<any>;
+  updatePayment: (
+    userId: string,
+    reference: string,
+    newPaymentDetails: updatePaymentDTO,
+  ) => Promise<any>;
+  getUserTransactions: (userId: string) => Promise<Payment[]>;
 }

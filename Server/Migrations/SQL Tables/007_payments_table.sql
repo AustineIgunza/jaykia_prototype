@@ -1,26 +1,15 @@
-CREATE TYPE pay_method AS ENUM('bank','mpesa');
+CREATE TYPE pay_method AS ENUM('bank','mobile');
 CREATE TYPE payment_status AS ENUM('pending','paid','failed');
+CREATE TYPE quote_type AS ENUM('invoice','payment');
 
 CREATE TABLE payments(
     id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
     booking_id UUID REFERENCES booking(id) ON DELETE CASCADE NOT NULL,
     amount INT,
-    payment_method pay_method NOT NULL,
+    quote quote_type,
+    payment_method pay_method,
     payment_status payment_status DEFAULT 'pending',
-    phone_number TEXT,
     transaction_reference TEXT,
     paid_at TIMESTAMP,
-
-    -- Constraint for M-Pesa
-    CONSTRAINT mpesa_fields_check CHECK (
-        (payment_method != 'mpesa') OR 
-        (phone_number IS NOT NULL AND transaction_reference IS NOT NULL)
-    ),
-
-    -- Constraint for Card
-    CONSTRAINT card_fields_check CHECK (
-        (payment_method != 'bank') OR 
-        (transaction_reference IS NOT NULL)
-    )
 );

@@ -1,102 +1,79 @@
-import { Database } from "../../Config/DB.js";
+import type { QueryResult } from "pg";
+import { ErrorMsg } from "../../../Utilities/Logger.js";
+import type { Database } from "../../Config/DB.js";
 import type {
-  CreatePaymentDTO,
+  createPaymentDTO,
   Payment,
   PaymentRepository,
-  UpdatePaymentDTO,
+  updatePaymentDTO,
 } from "./payments.types.js";
 
-// Fields that are allowed to be updated — prevents injection via key names
-const ALLOWED_UPDATE_FIELDS: (keyof UpdatePaymentDTO)[] = [
-  "payment_status",
-  "transaction_reference",
-  "paid_at",
-];
-
 export class PaymentRepo implements PaymentRepository {
-  constructor(private db: Database) {}
+  constructor(public db: Database) {}
 
-  async createPayment(data: CreatePaymentDTO): Promise<Payment> {
-    const query = `
-      INSERT INTO payments
-        (user_id, booking_id, amount, payment_method, phone_number, payment_status)
-      VALUES ($1, $2, $3, $4, $5, 'pending')
-      RETURNING *
-    `;
-    const result = await this.db.query(query, [
-      data.user_id,
-      data.booking_id,
-      data.amount,
-      data.payment_method,
-      data.phone_number ?? null,
-    ]);
-    return result.rows[0];
-  }
-
-  async editPayment(
-    paymentId: string,
-    data: UpdatePaymentDTO,
+  async initializePayment(
+    userId: string,
+    paymentDetails: createPaymentDTO,
   ): Promise<Payment> {
-    // Only pick whitelisted keys so no arbitrary column injection is possible
-    const entries = Object.entries(data).filter(([key]) =>
-      ALLOWED_UPDATE_FIELDS.includes(key as keyof UpdatePaymentDTO),
-    );
+    try {
+      let sqlString: string = `INSERT INTO payments(user_id,booking_id,quote,transaction_reference) VALUES($1,$2,$3,$4) RETURNING *`,
+        sqlQuery: QueryResult<any> = await this.db.query(sqlString, [
+          userId,
+          paymentDetails.bookingId,
+          paymentDetails.quoteType,
+          paymentDetails.referenceId,
+        ]),
+        result = sqlQuery.rows;
 
-    if (entries.length === 0) {
-      throw new Error("No valid fields provided for update");
+      return result[0];
+    } catch (error) {
+      ErrorMsg(error as Error);
+      throw error;
     }
+  }
 
-    const sets = entries.map(([key], i) => `${key} = $${i + 2}`).join(", ");
-    const values = entries.map(([, val]) => val);
+  async updatePayment(
+    userId: string,
+    reference: string,
+    newPaymentDetails: updatePaymentDTO,
+  ) {
+    try {
+      let keys: string[] = [],
+        values: string[] = [],
+        paramIndex = 3;
 
-    const query = `
-      UPDATE payments
-      SET ${sets}
-      WHERE id = $1
-      RETURNING *
-    `;
-    const result = await this.db.query(query, [paymentId, ...values]);
+      for (let [key, value] of Object.entries(newPaymentDetails)) {
+        keys.push(`${key}=$${paramIndex++}`);
+        values.push(value);
+      }
 
-    if (result.rows.length === 0) {
-      throw new Error(`Payment ${paymentId} not found`);
+      const sqlString = `UPDATE payments SET ${keys.join(",")} WHERE user_id=$1 AND transaction_reference=$2 RETURN *`,
+        sqlQuery: QueryResult = await this.db.query(sqlString, [
+          userId,
+          reference,
+          ...values,
+        ]),
+        sqlResult = sqlQuery.rows;
+
+      return sqlResult[0];
+    } catch (error) {
+      ErrorMsg(error as Error);
+      throw error;
     }
-    return result.rows[0];
   }
 
-  async getPaymentByReference(ref: string): Promise<Payment | null> {
-    const result = await this.db.query(
-      "SELECT * FROM payments WHERE transaction_reference = $1",
-      [ref],
-    );
-    return result.rows[0] ?? null;
-  }
+  async getUserTransactions(userId: string): Promise<Payment[]> {
+    try {
+      let sqlString: string = `SELECT * FROM payments WHERE user_id=$1`,
+        sqlQuery: QueryResult<Payment> = await this.db.query(sqlString, [
+          userId,
+        ]),
+        result = sqlQuery.rows;
 
-  async getPaymentById(id: string): Promise<Payment | null> {
-    const result = await this.db.query("SELECT * FROM payments WHERE id = $1", [
-      id,
-    ]);
-    return result.rows[0] ?? null;
-  }
-
-  async getUserPayments(userId: string): Promise<Payment[]> {
-    const result = await this.db.query(
-      "SELECT * FROM payments WHERE user_id = $1 ORDER BY created_at DESC",
-      [userId],
-    );
-    return result.rows;
-  }
-
-  async getAllPayments(): Promise<Payment[]> {
-    const result = await this.db.query(
-      "SELECT * FROM payments ORDER BY created_at DESC",
-    );
-    return result.rows;
-  }
-
-  async deletePayment(userId: string, paymentId: string): Promise<void> {
-    await this.db.query("DELETE FROM payments WHERE id = $1 AND user_id = $2", [
-      paymentId,
-      userId,
-    ]);
+      return result;
+    } catch (error) {
+      ErrorMsg(error as Error);
+      throw error;
+    }
   }
 }

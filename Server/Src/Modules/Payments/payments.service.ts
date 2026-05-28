@@ -1,228 +1,119 @@
+import { Warning } from "../../../Utilities/Logger.js";
+import { UserRepo } from "../Users/user.repository.js";
+import { UserServ } from "../Users/user.service.js";
 import type {
-  PaymentRepository,
   Payment,
-  InitiatePaymentResponse,
-  MpesaCallbackBody,
-  MpesaCallbackMetaItem,
-  StripeInitiateDTO,
-  StripeInitiateResponse,
+  PaymentRepository,
+  PaymentService,
+  updatePaymentDTO,
 } from "./payments.types.js";
-import { MpesaInternalService } from "./Methods/M-Pesa/mpesa.service.js";
-import { StripeInternalService } from "./Methods/Bank/stripe.service.js";
+import type { PayStackInitializor } from "./Paystack/paystack.types.js";
+import type { PayStackService } from "./Paystack/paystack.types.js";
 
-export class PaymentServ {
-  private mpesa = new MpesaInternalService();
-  private stripe = new StripeInternalService();
+export class PaymentServ implements PaymentService {
+  constructor(
+    private userRepo: UserRepo,
+    private repo: PaymentRepository,
+    private paystack: PayStackService,
+  ) {}
 
-  constructor(private repo: PaymentRepository) {}
-
-  // ── M-Pesa ─────────────────────────────────────────────────────────────────
-
-  async initiateMpesa(
+  async initializeInvoice(
     userId: string,
     bookingId: string,
     amount: number,
-    phone: string,
-  ): Promise<InitiatePaymentResponse> {
-    // 1. Persist a pending payment record
-    const payment = await this.repo.createPayment({
-      user_id: userId,
-      booking_id: bookingId,
-      amount,
-      payment_method: "mpesa",
-      phone_number: phone,
-    });
+  ): Promise<any> {
+    try {
+      if (!userId || !bookingId || amount)
+        throw new Error("User id and booking id must be provided");
 
-    // 2. Trigger STK Push — throws on Safaricom error
-    const mpesaRes = await this.mpesa.initiateStkPush(
-      phone,
-      amount,
-      payment.id,
-    );
+      const userService = new UserServ(this.userRepo),
+        user = await userService.getUser(userId);
 
-    // 3. Store MerchantRequestID so we can match the callback later
-    await this.repo.editPayment(payment.id, {
-      transaction_reference: mpesaRes.MerchantRequestID,
-    });
-
-    return {
-      message: "STK Push sent — awaiting customer confirmation",
-      paymentId: payment.id,
-    };
-  }
-
-  /**
-   * Called by Safaricom when the customer completes or dismisses the STK prompt.
-   * ResultCode === 0  → success
-   * ResultCode !== 0  → user cancelled or timed out
-   */
-  async handleMpesaCallback(body: MpesaCallbackBody): Promise<void> {
-    const { ResultCode, MerchantRequestID, CallbackMetadata } =
-      body.Body.stkCallback;
-
-    const payment = await this.repo.getPaymentByReference(MerchantRequestID);
-    if (!payment) {
-      // Safaricom sometimes retries; log and swallow so we always return 200
-      console.warn(
-        `[M-Pesa callback] Unknown MerchantRequestID: ${MerchantRequestID}`,
+      const paystackTransaction = await this.paystack.initializeInvoice(
+        user.email,
+        amount,
       );
-      return;
-    }
-
-    if (ResultCode === 0) {
-      const receipt = this.extractMetaValue(
-        CallbackMetadata?.Item ?? [],
-        "MpesaReceiptNumber",
-      );
-
-      await this.repo.editPayment(payment.id, {
-        payment_status: "paid",
-        transaction_reference: receipt ?? MerchantRequestID,
-        paid_at: new Date().toISOString(),
+      await this.repo.initializePayment(user.email, {
+        bookingId: bookingId,
+        amount: amount,
+        quoteType: "invoice",
+        referenceId: paystackTransaction.data.id,
+        paymentStatus: "pending",
       });
-    } else {
-      await this.repo.editPayment(payment.id, {
-        payment_status: "failed",
-      });
+
+      return paystackTransaction;
+    } catch (error) {
+      throw error;
     }
   }
 
-  // ── Stripe ─────────────────────────────────────────────────────────────────
-
-  async initiateStripe(
+  async initializeTransaction(
     userId: string,
-    dto: StripeInitiateDTO,
-  ): Promise<StripeInitiateResponse> {
-    // 1. Persist a pending payment record
-    const payment = await this.repo.createPayment({
-      user_id: userId,
-      booking_id: dto.booking_id,
-      amount: dto.amount,
-      payment_method: "bank",
-    });
+    bookingId: string,
+    amount: number,
+  ): Promise<PayStackInitializor> {
+    try {
+      if (!userId || !bookingId)
+        throw new Error("User id and booking id must be provided");
 
-    // 2. Create + confirm PaymentIntent — throws on Stripe error
-    const intent = await this.stripe.createAndConfirmPaymentIntent(
-      dto.payment_method_id,
-      dto.amount,
-      payment.id,
-      dto.email,
-    );
+      const userService = new UserServ(this.userRepo),
+        user = await userService.getUser(userId);
 
-    // 3. Store the PaymentIntent ID (pi_xxx) as our reference for webhook matching
-    await this.repo.editPayment(payment.id, {
-      transaction_reference: intent.id,
-    });
-
-    // 4. Handle the immediate result
-    if (intent.status === "succeeded") {
-      // Card was charged synchronously (no 3DS required)
-      await this.repo.editPayment(payment.id, {
-        payment_status: "paid",
-        paid_at: new Date().toISOString(),
+      const paystackTransaction = await this.paystack.initializeTransaction(
+        user.email,
+        amount,
+      );
+      await this.repo.initializePayment(userId, {
+        bookingId: bookingId,
+        amount: amount,
+        quoteType: "payment",
+        referenceId: paystackTransaction.data.access_code,
+        paymentStatus: "pending",
       });
 
-      return {
-        message: "Payment successful",
-        paymentId: payment.id,
-        stripeStatus: intent.status,
-      };
-    }
-
-    // requires_action → frontend must call stripe.handleNextAction(clientSecret)
-    return {
-      message: "Payment initiated — further action may be required",
-      paymentId: payment.id,
-      clientSecret: intent.client_secret,
-      stripeStatus: intent.status,
-    };
-  }
-
-  /**
-   * Handles Stripe webhook events. The raw body Buffer must be passed in
-   * (not parsed JSON) so the signature can be verified correctly.
-   *
-   * Relevant events:
-   *   payment_intent.succeeded         → mark paid
-   *   payment_intent.payment_failed    → mark failed
-   */
-  async handleStripeWebhook(rawBody: Buffer, signature: string): Promise<void> {
-    // Throws on bad signature — let the controller return 400
-    const event = this.stripe.verifyWebhookSignature(rawBody, signature);
-
-    const { type, data } = event;
-    const intent = data.object;
-
-    // We only care about PaymentIntent events
-    if (!type.startsWith("payment_intent.")) return;
-
-    // Retrieve our internal payment ID from metadata we set during creation
-    const paymentId = intent.metadata?.paymentId;
-    if (!paymentId) {
-      console.warn(
-        `[Stripe webhook] No paymentId in metadata for intent ${intent.id}`,
-      );
-      return;
-    }
-
-    const payment = await this.repo.getPaymentById(paymentId);
-    if (!payment) {
-      console.warn(`[Stripe webhook] Payment ${paymentId} not found in DB`);
-      return;
-    }
-
-    switch (type) {
-      case "payment_intent.succeeded":
-        await this.repo.editPayment(payment.id, {
-          payment_status: "paid",
-          transaction_reference: intent.id,
-          paid_at: new Date().toISOString(),
-        });
-        break;
-
-      case "payment_intent.payment_failed":
-        await this.repo.editPayment(payment.id, {
-          payment_status: "failed",
-          transaction_reference: intent.id,
-        });
-        break;
-
-      default:
-        // Log unhandled events but don't error — Stripe sends many event types
-        console.info(`[Stripe webhook] Unhandled event type: ${type}`);
+      return paystackTransaction;
+    } catch (error) {
+      throw error;
     }
   }
 
-  // ── Shared CRUD ────────────────────────────────────────────────────────────
+  async updatePayment(
+    userId: string,
+    reference: string,
+    newPaymentDetails: updatePaymentDTO,
+  ) {
+    if (!userId || !reference || !newPaymentDetails)
+      throw new Error("Invalid user id, reference or payment details");
 
-  async getPaymentById(paymentId: string): Promise<Payment> {
-    const payment = await this.repo.getPaymentById(paymentId);
-    if (!payment) throw new Error(`Payment ${paymentId} not found`);
-    return payment;
+    const allowedFields: string[] = [];
+    let filteredPaymentDetails: Record<string, any> = {};
+
+    for (let [key, value] of Object.entries(newPaymentDetails)) {
+      if (!allowedFields.includes(key)) continue;
+
+      if (!value || value.toString().length <= 0)
+        throw new Error(`${key} has an invalid value`);
+
+      filteredPaymentDetails[key] = value;
+    }
+
+    const updatePayments = await this.repo.updatePayment(
+      userId,
+      reference,
+      filteredPaymentDetails as updatePaymentDTO,
+    );
+
+    return updatePayments;
   }
 
-  async getUserPayments(userId: string): Promise<Payment[]> {
-    return this.repo.getUserPayments(userId);
-  }
+  async getUserTransactions(userId: string): Promise<Payment[]> {
+    try {
+      const userTransactions = await this.repo.getUserTransactions(userId);
 
-  async getAllPayments(): Promise<Payment[]> {
-    return this.repo.getAllPayments();
-  }
-
-  async deletePayment(userId: string, paymentId: string): Promise<void> {
-    const payment = await this.repo.getPaymentById(paymentId);
-    if (!payment) throw new Error(`Payment ${paymentId} not found`);
-    if (payment.user_id !== userId) throw new Error("Forbidden");
-    return this.repo.deletePayment(userId, paymentId);
-  }
-
-  // ── Helpers ────────────────────────────────────────────────────────────────
-
-  private extractMetaValue(
-    items: MpesaCallbackMetaItem[],
-    name: string,
-  ): string | null {
-    const item = items.find((i) => i.Name === name);
-    return item?.Value != null ? String(item.Value) : null;
+      return userTransactions;
+    } catch (error) {
+      Warning("Error at retrieving user transactions");
+      throw error;
+    }
   }
 }
