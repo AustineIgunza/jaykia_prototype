@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { GoldDivider } from "@/components/ui/gold-divider";
 import { FadeIn } from "@/components/motion";
 import { useApi } from "@/lib/api/use-api";
+import { useAuth } from "@/lib/auth/context";
 import type { CreateBookingDTO, TransportMode } from "@/lib/api/types";
 
 type Step = "details" | "review" | "confirmation";
@@ -28,6 +29,7 @@ interface FormData {
   pickup_location: string;
   drop_off_location: string;
   flight_number: string;
+  flight_departure: string;
   flight_arrival: string;
   no_of_passengers: string;
   no_of_luggage_items: string;
@@ -43,6 +45,7 @@ const initial: FormData = {
   pickup_location: "",
   drop_off_location: "",
   flight_number: "",
+  flight_departure: "",
   flight_arrival: "",
   no_of_passengers: "1",
   no_of_luggage_items: "1",
@@ -54,6 +57,7 @@ const initial: FormData = {
 export default function BookPage() {
   const api = useApi();
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [step, setStep] = useState<Step>("details");
   const [form, setForm] = useState<FormData>(initial);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
@@ -76,9 +80,12 @@ export default function BookPage() {
     if (!form.drop_off_location.trim()) errs.drop_off_location = "Drop-off location is required";
     if (form.mode_of_transport === "flight" && !form.flight_number.trim())
       errs.flight_number = "Flight number is required for airport transfers";
+    if (form.mode_of_transport === "flight" && !form.flight_departure)
+      errs.flight_departure = "Departure date & time is required";
     if (form.mode_of_transport === "flight" && !form.flight_arrival)
       errs.flight_arrival = "Arrival date & time is required";
     if (Number(form.no_of_passengers) < 1) errs.no_of_passengers = "At least 1 passenger";
+    if (Number(form.no_of_luggage_items) < 1) errs.no_of_luggage_items = "At least 1 luggage item";
 
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -95,6 +102,7 @@ export default function BookPage() {
         no_of_luggage_items: Number(form.no_of_luggage_items),
         mode_of_transport: form.mode_of_transport,
         flight_number: form.flight_number || undefined,
+        flight_departure: form.flight_departure || undefined,
         flight_arrival: form.flight_arrival || undefined,
         contact_name: form.contact_name,
         contact_phone: form.contact_phone,
@@ -121,6 +129,7 @@ export default function BookPage() {
       `Drop-off: ${form.drop_off_location}`,
       `Passengers: ${form.no_of_passengers}`,
       form.flight_number ? `Flight: ${form.flight_number}` : "",
+      form.flight_departure ? `Departure: ${form.flight_departure}` : "",
       form.flight_arrival ? `Arrival: ${form.flight_arrival}` : "",
       ``,
       `I'd like to discuss the quote. Thank you!`,
@@ -128,6 +137,39 @@ export default function BookPage() {
       .filter(Boolean)
       .join("\n");
     return `https://wa.me/${WHATSAPP_NUMBER.replace(/\s/g, "")}?text=${encodeURIComponent(msg)}`;
+  }
+
+  if (authLoading) {
+    return (
+      <div className="max-w-2xl mx-auto px-6 py-24 text-center">
+        <p className="text-muted animate-pulse">Loading&hellip;</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="max-w-md mx-auto px-6 py-24 text-center">
+        <FadeIn>
+          <h1 className="font-display text-3xl font-bold mb-3">Sign in to book</h1>
+          <p className="text-muted mb-8">
+            Booking a transfer requires a JayKia account so you can track your
+            trips and manage your bookings.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button onClick={() => router.push("/auth/login?returnTo=/book")}>
+              Sign In
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => router.push("/auth/register?returnTo=/book")}
+            >
+              Create Account
+            </Button>
+          </div>
+        </FadeIn>
+      </div>
+    );
   }
 
   return (
@@ -240,6 +282,14 @@ export default function BookPage() {
                     required
                   />
                   <Input
+                    label="Departure Date & Time"
+                    type="datetime-local"
+                    value={form.flight_departure}
+                    onChange={(e) => update("flight_departure", e.target.value)}
+                    error={errors.flight_departure}
+                    required
+                  />
+                  <Input
                     label="Arrival Date & Time"
                     type="datetime-local"
                     value={form.flight_arrival}
@@ -263,10 +313,11 @@ export default function BookPage() {
                 <Input
                   label="Number of Luggage Items"
                   type="number"
-                  min="0"
+                  min="1"
                   max="20"
                   value={form.no_of_luggage_items}
                   onChange={(e) => update("no_of_luggage_items", e.target.value)}
+                  error={errors.no_of_luggage_items}
                 />
               </div>
 
@@ -317,6 +368,7 @@ export default function BookPage() {
                 ...(form.mode_of_transport === "flight"
                   ? [
                       ["Flight", form.flight_number],
+                      ["Departure", form.flight_departure],
                       ["Arrival", form.flight_arrival],
                     ]
                   : []),

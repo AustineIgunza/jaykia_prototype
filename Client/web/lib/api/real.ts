@@ -17,7 +17,6 @@ import type {
   Role,
   CreateRoleDTO,
   UpdateRoleDTO,
-  UserSpecificRoles,
   Permission,
   Booking,
   CreateBookingDTO,
@@ -90,6 +89,21 @@ function bookingFromBackend(raw: Record<string, unknown>): Booking {
 function bookingsFromBackend(raw: unknown): Booking[] {
   if (!Array.isArray(raw)) return [];
   return raw.map((b) => bookingFromBackend(b as Record<string, unknown>));
+}
+
+// Backend stores roles as { id, role_name, role_description }; the frontend
+// Role contract uses { id, name, description }.
+function roleFromBackend(raw: Record<string, unknown>): Role {
+  return {
+    id: Number(raw.id),
+    name: (raw.role_name as string) ?? (raw.name as string) ?? "",
+    description:
+      (raw.role_description as string) ?? (raw.description as string) ?? "",
+  };
+}
+
+function roleNameOf(raw: Record<string, unknown>): string {
+  return (raw.role_name as string) ?? (raw.name as string) ?? "";
 }
 
 // ─── HTTP helper ────────────────────────────────────────────────────────────
@@ -177,19 +191,24 @@ export const realClient: ApiClient = {
 
   // ── Roles ────────────────────────────────────────────────────────────────
 
-  getRoles: () => request<Role[]>("/api/roles"),
+  getRoles: () =>
+    request<unknown>("/api/roles").then((rows) =>
+      (Array.isArray(rows) ? rows : []).map((r) =>
+        roleFromBackend(r as Record<string, unknown>)
+      )
+    ),
 
   createRole: (data: CreateRoleDTO) =>
-    request<Role>("/api/roles", {
+    request<Record<string, unknown>>("/api/roles", {
       method: "POST",
       body: JSON.stringify(data),
-    }),
+    }).then(roleFromBackend),
 
   updateRole: (roleId: number, data: UpdateRoleDTO) =>
-    request<Role>("/api/roles", {
+    request<Record<string, unknown>>("/api/roles", {
       method: "PATCH",
       body: JSON.stringify({ id: roleId, ...data }),
-    }),
+    }).then(roleFromBackend),
 
   deleteRole: (roleId: number) =>
     request<void>("/api/roles", {
@@ -200,7 +219,12 @@ export const realClient: ApiClient = {
   // ── User Roles ───────────────────────────────────────────────────────────
 
   getUserRoles: (_userId: string) =>
-    request<UserSpecificRoles>("/api/userroles"),
+    request<{ userId?: string; roles?: Record<string, unknown>[] }>(
+      "/api/userroles"
+    ).then((data) => ({
+      userId: data?.userId ?? _userId,
+      roles: (data?.roles ?? []).map(roleNameOf).filter(Boolean),
+    })),
 
   assignRole: (_userId: string, roleId: number) =>
     request<void>(`/api/userroles/${roleId}`, { method: "POST" }),

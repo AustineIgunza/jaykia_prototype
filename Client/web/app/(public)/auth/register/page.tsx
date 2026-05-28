@@ -36,7 +36,9 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register({ username, email, password });
-      router.push("/auth/account");
+      const raw = new URLSearchParams(window.location.search).get("returnTo");
+      const safe = raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : null;
+      router.push(safe ?? "/auth/account");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {

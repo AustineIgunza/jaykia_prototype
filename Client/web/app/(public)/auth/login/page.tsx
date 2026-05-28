@@ -31,14 +31,20 @@ export default function LoginPage() {
     }
   }, [twoFactorStep]);
 
+  function redirectAfterAuth(roles: string[]) {
+    const raw = new URLSearchParams(window.location.search).get("returnTo");
+    const safe = raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : null;
+    const tier = getRoleTier(roles);
+    router.push(safe ?? (tier === "customer" ? "/auth/account" : "/admin"));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
       const loggedInUser = await login({ email, password });
-      const tier = getRoleTier(loggedInUser.roles);
-      router.push(tier === "customer" ? "/auth/account" : "/admin");
+      redirectAfterAuth(loggedInUser.roles);
     } catch (err) {
       if (err instanceof TwoFactorRequiredError) {
         setTempToken(err.tempToken);
@@ -61,8 +67,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const loggedInUser = await verify2FA(tempToken, code);
-      const tier = getRoleTier(loggedInUser.roles);
-      router.push(tier === "customer" ? "/auth/account" : "/admin");
+      redirectAfterAuth(loggedInUser.roles);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid code");
       setOtpDigits(["", "", "", "", "", ""]);

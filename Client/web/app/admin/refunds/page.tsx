@@ -21,11 +21,18 @@ export default function AdminRefundsPage() {
   const api = useApi();
   const [refunds, setRefunds] = useState<Refund[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (!api) return;
-    api.getAllRefunds().then(setRefunds).finally(() => setLoading(false));
+    api
+      .getAllRefunds()
+      .then(setRefunds)
+      .catch((err) =>
+        setLoadError(err instanceof Error ? err.message : "Failed to load refunds")
+      )
+      .finally(() => setLoading(false));
   }, [api]);
 
   async function handleAction(refundId: string, approved: "accepted" | "rejected") {
@@ -47,6 +54,12 @@ export default function AdminRefundsPage() {
     <FadeIn>
     <div>
       <h1 className="font-display text-2xl font-bold mb-6">Refund Requests</h1>
+
+      {loadError && (
+        <div className="mb-4 rounded-[var(--radius-md)] border border-border bg-surface px-4 py-3 text-sm text-muted">
+          Couldn&rsquo;t load refunds: {loadError}
+        </div>
+      )}
 
       <Card>
         <CardContent className="p-0">
