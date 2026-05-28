@@ -1,0 +1,57 @@
+services:
+  server:
+    build:
+      context: .
+    container_name: "JayKia-Server"
+    environment:
+      NODE_ENV: production
+      SERVER_PORT: 3000
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/jaykia
+      JWT_ACCESS_TOKEN: 58f8d7f2861b7c75e000bb33054d9604
+      JWT_REFRESH_TOKEN: 6aec11d3099a76fb9816d1576150c960
+      GOOGLE_CLIENT_ID: ***REMOVED***
+      GOOGLE_CLIENT_SECRET: ***REMOVED***
+      GOOGLE_SIGNUP_REDIRECT_URI: something-here
+      GOOGLE_LOGIN_REDIRECT_URI: something-also-here
+      PAYSTACK_SECRET_KEY: key-here
+      MAILGUN_USERNAME: no-reply@ferracorp.com
+      MAILGUN_PASSWORD: ***REMOVED***
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /usr/src/app
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: package.json
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: jaykia
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432" # optional (remove in prod)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  db-data:

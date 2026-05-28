@@ -11,5 +11,5 @@ CREATE TABLE payments(
     payment_method pay_method,
     payment_status payment_status DEFAULT 'pending',
     transaction_reference TEXT,
-    paid_at TIMESTAMP,
+    paid_at TIMESTAMP
 );

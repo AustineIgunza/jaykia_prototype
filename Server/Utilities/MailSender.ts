@@ -161,26 +161,3 @@ export async function sendMail(userEmail: string, bookingDetails: BookingMail) {
     throw error;
   }
 }
-
-(async () => {
-  await sendMail("igunza@ferracorp.com", {
-    bookingId: "tester",
-    name: "Austine Igunza",
-    date: "28-May-2026",
-    passengers: 10,
-    luggageItems: 10,
-    departureTime: "08:00:10 p.m",
-    arrivalTime: "10:00:20 p.m",
-    action: "created",
-  });
-  await sendMail("kiragu@ferracorp.com", {
-    bookingId: "tester",
-    name: "Paul Kiragu",
-    date: "28-May-2026",
-    passengers: 10,
-    luggageItems: 10,
-    departureTime: "08:00:10 p.m",
-    arrivalTime: "10:00:20 p.m",
-    action: "deleted",
-  });
-})();
