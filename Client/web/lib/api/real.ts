@@ -37,7 +37,6 @@ import type {
   DashboardSummary,
   MonthlyReport,
   UserPermission,
-  PaymentMethod,
 } from "./types";
 import { getAccessToken } from "@/lib/auth/token";
 
@@ -91,15 +90,6 @@ function bookingFromBackend(raw: Record<string, unknown>): Booking {
 function bookingsFromBackend(raw: unknown): Booking[] {
   if (!Array.isArray(raw)) return [];
   return raw.map((b) => bookingFromBackend(b as Record<string, unknown>));
-}
-
-function paymentFromBackend(raw: Record<string, unknown>): Payment {
-  return raw as unknown as Payment;
-}
-
-function paymentsFromBackend(raw: unknown): Payment[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.map((p) => paymentFromBackend(p as Record<string, unknown>));
 }
 
 // ─── HTTP helper ────────────────────────────────────────────────────────────

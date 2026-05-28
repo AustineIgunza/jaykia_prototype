@@ -15,8 +15,6 @@ import { useAuth } from "@/lib/auth/context";
 import type { Booking, TripStatus } from "@/lib/api/types";
 import type { BadgeVariant } from "@/components/ui/status-badge";
 
-const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_CONTACT_WHATSAPP || "+254700000000";
-
 const statusVariant: Record<string, BadgeVariant> = {
   pending: "pending",
   ongoing: "info",
@@ -165,7 +163,7 @@ export default function AdminBookingsPage() {
           { key: "ongoing", label: "Ongoing", variant: "info" as BadgeVariant },
           { key: "complete", label: "Complete", variant: "success" as BadgeVariant },
           { key: "cancelled", label: "Cancelled", variant: "error" as BadgeVariant },
-        ] as const).map(({ key, label, variant }) => (
+        ] as const).map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setFilter(key)}

@@ -28,11 +28,6 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
     }
   }, [loading, user, isStaff, roleTier, pathname, router]);
 
-  // Close menu on route change
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [pathname]);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -131,6 +126,7 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
                 <Link
                   key={link.href}
                   href={link.href}
+                  onClick={() => setMenuOpen(false)}
                   className={`flex items-center gap-3 px-3 py-3 rounded-[var(--radius-md)] text-sm transition-colors ${
                     pathname === link.href
                       ? "bg-accent/10 text-accent font-medium"
@@ -162,6 +158,7 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
           <Link
             key={link.href}
             href={link.href}
+            onClick={() => setMenuOpen(false)}
             className={`flex flex-col items-center gap-0.5 py-2 px-3 min-w-[64px] text-xs transition-colors ${
               pathname === link.href ? "text-accent" : "text-muted"
             }`}

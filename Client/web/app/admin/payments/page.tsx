@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
-import { Input, Textarea } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { SkeletonTable } from "@/components/ui/skeleton";
@@ -65,14 +65,11 @@ export default function AdminPaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Payment methods management
-  const [methods, setMethods] = useState<PaymentMethodInfo[]>(DEFAULT_METHODS);
+  // Payment methods management (lazily initialized from localStorage; this
+  // component only renders client-side, after the admin auth guard resolves)
+  const [methods, setMethods] = useState<PaymentMethodInfo[]>(loadMethods);
   const [editingMethod, setEditingMethod] = useState<PaymentMethodInfo | null>(null);
   const [editDetails, setEditDetails] = useState("");
-
-  useEffect(() => {
-    setMethods(loadMethods());
-  }, []);
 
   useEffect(() => {
     if (!api) return;

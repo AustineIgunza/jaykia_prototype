@@ -124,8 +124,6 @@ export const mockClient: ApiClient = {
     }
     return { accessToken: makeFakeToken(currentUserId), refreshToken: `refresh_${uid()}` };
   },
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async refreshToken(_refreshToken: string): Promise<AuthRefreshToken> {
     await delay();
     return { accessToken: makeFakeToken(currentUserId) };
@@ -139,8 +137,6 @@ export const mockClient: ApiClient = {
       secret: "JBSWY3DPEHPK3PXP",
     };
   },
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async verifySetup2FA(_code: string): Promise<TwoFactorVerifySetupResponse> {
     await delay();
     twoFactorEnabled.add(currentUserId);
@@ -151,8 +147,6 @@ export const mockClient: ApiClient = {
       ],
     };
   },
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async verify2FA(tempToken: string, _code: string): Promise<AuthResponse> {
     await delay();
     // Extract userId from tempToken
@@ -161,8 +155,6 @@ export const mockClient: ApiClient = {
     currentUserId = payload.userId;
     return { accessToken: makeFakeToken(currentUserId), refreshToken: `refresh_${uid()}` };
   },
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async disable2FA(_code: string): Promise<void> {
     await delay();
     twoFactorEnabled.delete(currentUserId);
@@ -247,13 +239,9 @@ export const mockClient: ApiClient = {
     if (userId === "u-support") return { userId, roles: ["support"] };
     return { userId, roles: ["customer"] };
   },
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async assignRole(_userId: string, _roleId: number): Promise<void> {
     await delay();
   },
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async removeRole(_userId: string, _roleId: number): Promise<void> {
     await delay();
   },
@@ -276,13 +264,9 @@ export const mockClient: ApiClient = {
     }
     return [];
   },
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async assignPermission(_userId: string, _permissionId: number): Promise<void> {
     await delay();
   },
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async removePermission(_userId: string, _permissionId: number): Promise<void> {
     await delay();
   },

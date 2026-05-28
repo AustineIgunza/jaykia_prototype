@@ -1,16 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
-import { GoldDivider } from "@/components/ui/gold-divider";
 import { FadeIn, Stagger, StaggerItem } from "@/components/motion";
 import { useApi } from "@/lib/api/use-api";
-import type { PublicUserDTO, Role, UserSpecificRoles } from "@/lib/api/types";
+import type { PublicUserDTO, Role } from "@/lib/api/types";
 
 interface DriverInfo {
   user: PublicUserDTO;
@@ -29,14 +27,8 @@ export default function AdminDriversPage() {
   const [addSearch, setAddSearch] = useState("");
   const [addLoading, setAddLoading] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadData = useCallback(async () => {
     if (!api) return;
-    loadData();
-  }, [api]);
-
-  async function loadData() {
-    if (!api) return;
-    setLoading(true);
     try {
       const [users, rolesData] = await Promise.all([api.getUsers(), api.getRoles()]);
       setAllUsers(users);
@@ -54,7 +46,11 @@ export default function AdminDriversPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [api]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const nonDriverUsers = allUsers.filter(
     (u) => !drivers.some((d) => d.user.id === u.id)
