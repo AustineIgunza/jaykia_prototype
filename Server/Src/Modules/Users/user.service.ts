@@ -115,6 +115,9 @@ export class UserServ implements UserService {
       if (!userId) throw new Error("User id must be provided");
 
       await this.userRepo.deleteUser(userId);
-    } catch (error) {}
+    } catch (error) {
+      Warning("Error at user deletion");
+      throw error;
+    }
   }
 }

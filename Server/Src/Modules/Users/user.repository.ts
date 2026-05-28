@@ -18,8 +18,16 @@ export class UserRepo implements UserRepository {
         ? "INSERT INTO users(username,email,password,oauth,oauth_provider) VALUES($1,$2,$3,$4,$5)"
         : "INSERT INTO users(username,email,password) VALUES($1,$2,$3)";
 
-      const createUserQuery: QueryResult<User> =
-          await this.database.query(sqlQuery),
+      const createUserQuery: QueryResult<User> = await this.database.query(
+          sqlQuery,
+          [
+            userDetails.username,
+            userDetails.email,
+            userDetails.password,
+            userDetails.oauth,
+            userDetails.oauth_provider,
+          ],
+        ),
         newUser = createUserQuery.rows[0];
 
       return newUser as User;

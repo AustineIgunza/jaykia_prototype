@@ -20,7 +20,7 @@ const Router = (
     "Access-Control-Allow-Methods",
     "GET,POST,PUT,PATCH,OPTIONS,DELETE",
   );
-  response.setHeader("Access-Control-Allow-Origins", "*");
+  response.setHeader("Access-Control-Allow-Origin", "*");
   response.setHeader(
     "Access-Control-Allow-Headers",
     "accept,content-type,content-length,authorization",
