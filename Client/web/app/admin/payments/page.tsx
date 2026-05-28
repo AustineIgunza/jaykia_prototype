@@ -113,7 +113,7 @@ export default function AdminPaymentsPage() {
     }
   };
 
-  const total = payments.filter((p) => p.payment_status === "paid").reduce((sum, p) => sum + p.amount, 0);
+  const total = payments.filter((p) => p.payment_status === "paid").reduce((sum, p) => sum + Number(p.amount), 0);
 
   return (
     <FadeIn>
@@ -221,7 +221,7 @@ export default function AdminPaymentsPage() {
                     </TableCell>
                     <TableCell className="font-mono text-xs">{p.transaction_reference || "\u2014"}</TableCell>
                     <TableCell className="text-xs">
-                      {new Date(p.created_at).toLocaleString()}
+                      {p.paid_at ? new Date(p.paid_at).toLocaleString() : "—"}
                     </TableCell>
                     {canDelete && (
                       <TableCell>

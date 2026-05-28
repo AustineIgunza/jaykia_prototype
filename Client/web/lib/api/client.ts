@@ -23,7 +23,7 @@ import type {
   Payment,
   PaystackInitiateDTO,
   PaystackInitiateResponse,
-  InitiatePaymentResponse,
+  PaystackInvoiceResponse,
   Rating,
   CreateRatingDTO,
   Refund,
@@ -81,12 +81,14 @@ export interface ApiClient {
   createBooking(data: CreateBookingDTO): Promise<Booking>;
   updateBooking(bookingId: string, data: UpdateBookingDTO): Promise<Booking>;
 
-  // Payments
+  // Payments — backend currently only exposes Paystack initialize + webhook.
+  // get/delete are kept on the interface so the admin UI compiles; real client
+  // returns empty / no-op until backend re-adds list/delete endpoints.
   getPayments(): Promise<Payment[]>;
   getAllPayments(): Promise<Payment[]>;
   getPayment(paymentId: string): Promise<Payment>;
-  initiateMpesa(bookingId: string, amount: number, phoneNumber: string): Promise<InitiatePaymentResponse>;
   initiatePaystack(data: PaystackInitiateDTO): Promise<PaystackInitiateResponse>;
+  initiateInvoice(data: PaystackInitiateDTO): Promise<PaystackInvoiceResponse>;
   deletePayment(paymentId: string): Promise<void>;
 
   // Ratings

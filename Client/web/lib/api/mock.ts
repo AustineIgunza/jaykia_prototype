@@ -24,7 +24,7 @@ import type {
   Payment,
   PaystackInitiateDTO,
   PaystackInitiateResponse,
-  InitiatePaymentResponse,
+  PaystackInvoiceResponse,
   Rating,
   CreateRatingDTO,
   Refund,
@@ -355,47 +355,50 @@ export const mockClient: ApiClient = {
     return payment;
   },
 
-  async initiateMpesa(bookingId: string, amount: number, phoneNumber: string): Promise<InitiatePaymentResponse> {
-    await delay();
-    const id = `p-${uid()}`;
-    const now = new Date().toISOString();
-    const payment: Payment = {
-      id,
-      user_id: currentUserId,
-      booking_id: bookingId,
-      amount,
-      payment_method: "m-pesa",
-      payment_status: "pending",
-      phone_number: phoneNumber,
-      transaction_reference: `MRQ_${uid()}`,
-      paid_at: null,
-      created_at: now,
-      updated_at: now,
-    };
-    payments.push(payment);
-    return { message: "STK push sent", paymentId: id };
-  },
-
   async initiatePaystack(data: PaystackInitiateDTO): Promise<PaystackInitiateResponse> {
     await delay();
-    const id = `p-${uid()}`;
     const ref = `pstk_${uid()}`;
-    const now = new Date().toISOString();
+    const id = `p-${uid()}`;
     const payment: Payment = {
       id,
       user_id: currentUserId,
-      booking_id: data.booking_id,
+      booking_id: data.bookingId,
       amount: data.amount,
-      payment_method: "paystack",
-      payment_status: "paid",
-      phone_number: null,
+      payment_method: "bank",
+      payment_status: "pending",
       transaction_reference: ref,
-      paid_at: now,
-      created_at: now,
-      updated_at: now,
+      paid_at: null,
     };
     payments.push(payment);
-    return { message: "Payment initiated", paymentId: id, reference: ref };
+    return {
+      status: true,
+      message: "Authorization URL created",
+      data: {
+        authorization_url: `https://checkout.paystack.com/${ref}`,
+        access_code: ref,
+        reference: ref,
+      },
+    };
+  },
+
+  async initiateInvoice(data: PaystackInitiateDTO): Promise<PaystackInvoiceResponse> {
+    await delay();
+    const id = `inv_${uid()}`;
+    const now = new Date().toISOString();
+    return {
+      status: true,
+      message: "Invoice created",
+      data: {
+        id,
+        amount: data.amount,
+        currency: "KES",
+        due_date: now,
+        invoice_number: `INV-${uid().toUpperCase()}`,
+        request_code: `REQ_${uid()}`,
+        status: "pending",
+        paid: false,
+      },
+    };
   },
 
   async deletePayment(paymentId: string): Promise<void> {

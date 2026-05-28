@@ -25,7 +25,7 @@ import type {
   Payment,
   PaystackInitiateDTO,
   PaystackInitiateResponse,
-  InitiatePaymentResponse,
+  PaystackInvoiceResponse,
   Rating,
   CreateRatingDTO,
   Refund,
@@ -93,19 +93,8 @@ function bookingsFromBackend(raw: unknown): Booking[] {
   return raw.map((b) => bookingFromBackend(b as Record<string, unknown>));
 }
 
-function paymentMethodFromBackend(m: string): PaymentMethod {
-  if (m === "mpesa") return "m-pesa";
-  if (m === "bank" || m === "paystack") return "paystack";
-  return m as PaymentMethod;
-}
-
 function paymentFromBackend(raw: Record<string, unknown>): Payment {
-  return {
-    ...raw,
-    payment_method: paymentMethodFromBackend(
-      raw.payment_method as string
-    ),
-  } as Payment;
+  return raw as unknown as Payment;
 }
 
 function paymentsFromBackend(raw: unknown): Payment[] {
@@ -306,39 +295,31 @@ export const realClient: ApiClient = {
     }).then(bookingFromBackend),
 
   // ── Payments ─────────────────────────────────────────────────────────────
+  // Backend currently exposes only:
+  //   POST /payments/initialize/payment  – Paystack transaction
+  //   POST /payments/initialize/invoice  – Paystack invoice
+  //   POST /payments/callback            – webhook
+  // No list/get-by-id/delete server-side yet; those return empty / no-op.
 
-  getPayments: () =>
-    request<unknown>("/api/payments").then(paymentsFromBackend),
+  getPayments: (): Promise<Payment[]> => Promise.resolve([]),
+  getAllPayments: (): Promise<Payment[]> => Promise.resolve([]),
+  getPayment: (_paymentId: string): Promise<Payment> =>
+    Promise.reject(new Error("Single-payment lookup is not available on this server")),
 
-  getAllPayments: () =>
-    request<unknown>("/api/payments/all").then(paymentsFromBackend),
-
-  getPayment: (paymentId: string) =>
-    request<Record<string, unknown>>(`/api/payments/${paymentId}`).then(
-      paymentFromBackend
-    ),
-
-  initiateMpesa: (
-    bookingId: string,
-    amount: number,
-    phoneNumber: string
-  ) =>
-    request<InitiatePaymentResponse>("/api/payments/mpesa/initiate", {
+  initiatePaystack: (data: PaystackInitiateDTO) =>
+    request<PaystackInitiateResponse>("/api/payments/initialize/payment", {
       method: "POST",
-      body: JSON.stringify({
-        booking_id: bookingId,
-        amount,
-        phone_number: phoneNumber,
-      }),
+      body: JSON.stringify({ bookingId: data.bookingId, amount: data.amount }),
     }),
 
-  // Backend currently exposes Stripe + M-Pesa only. Paystack endpoint does not
-  // exist server-side yet; stub here to avoid 404s. UI keeps Paystack branding.
-  initiatePaystack: (_data: PaystackInitiateDTO): Promise<PaystackInitiateResponse> =>
-    Promise.reject(new Error("Paystack is not available on this server")),
+  initiateInvoice: (data: PaystackInitiateDTO) =>
+    request<PaystackInvoiceResponse>("/api/payments/initialize/invoice", {
+      method: "POST",
+      body: JSON.stringify({ bookingId: data.bookingId, amount: data.amount }),
+    }),
 
-  deletePayment: (paymentId: string) =>
-    request<void>(`/api/payments/${paymentId}`, { method: "DELETE" }),
+  deletePayment: (_paymentId: string): Promise<void> =>
+    Promise.reject(new Error("Delete payment is not available on this server")),
 
   // ── Ratings ──────────────────────────────────────────────────────────────
 

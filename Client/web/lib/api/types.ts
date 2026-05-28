@@ -193,48 +193,55 @@ export interface UpdateBookingDTO {
 }
 
 // ─── Payments ───
+// Backend rewrote payments around Paystack. Routes:
+//   POST /payments/initialize/payment  → one-shot transaction
+//   POST /payments/initialize/invoice  → invoice
+//   POST /payments/callback            → Paystack webhook
+// No GET/DELETE on /payments at present.
 
-export type PaymentMethod = "m-pesa" | "mpesa" | "paystack";
-export type PaymentStatus = "paid" | "pending" | "cancelled" | "failed";
+export type PaymentMethod = "mobile" | "bank";
+export type PaymentStatus = "paid" | "pending" | "failed";
+export type QuoteType = "payment" | "invoice";
 
 export interface Payment {
   id: string;
   user_id: string;
   booking_id: string;
-  amount: number;
+  amount: number | string;
   payment_method: PaymentMethod;
   payment_status: PaymentStatus;
   transaction_reference: string | null;
-  phone_number: string | null;
   paid_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreatePaymentDTO {
-  booking_id: string;
-  amount: number;
-  payment_method: PaymentMethod;
-  phone_number?: string;
 }
 
 export interface PaystackInitiateDTO {
-  booking_id: string;
+  bookingId: string;
   amount: number;
-  email: string;
 }
 
 export interface PaystackInitiateResponse {
+  status: boolean;
   message: string;
-  paymentId: string;
-  authorization_url?: string;
-  access_code?: string;
-  reference: string;
+  data: {
+    authorization_url: string;
+    access_code: string;
+    reference: string;
+  };
 }
 
-export interface InitiatePaymentResponse {
+export interface PaystackInvoiceResponse {
+  status: boolean;
   message: string;
-  paymentId: string;
+  data: {
+    id: string;
+    amount: number;
+    currency: string;
+    due_date: string;
+    invoice_number: string;
+    request_code: string;
+    status: string;
+    paid: boolean;
+  };
 }
 
 // ─── Ratings ───
