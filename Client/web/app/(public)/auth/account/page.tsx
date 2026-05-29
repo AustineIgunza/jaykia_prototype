@@ -414,7 +414,15 @@ export default function AccountPage() {
                   )}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                  {!booking.cancelled && booking.trip_status !== "complete" && (
+                    <Button
+                      size="sm"
+                      onClick={() => router.push(`/pay?booking=${booking.id}`)}
+                    >
+                      Pay
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
